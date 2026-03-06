@@ -135,6 +135,9 @@ select.form-control option { background: var(--surface); color: var(--text); }
 .proto-btn:hover { border-color: var(--pcolor, #888); color: var(--pcolor, #888); background: var(--surface2); }
 .proto-input  { width: 52px; text-align: center; font-family: var(--font-mono); font-size: 18px; font-weight: 700; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; color: var(--text); padding: 4px; outline: none; }
 .proto-input:focus { border-color: var(--pcolor, #888); }
+.proto-input::-webkit-outer-spin-button,
+.proto-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.proto-input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
 .protocol-bar-mini { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
 .protocol-bar-mini > div { height: 100%; border-radius: 2px; transition: width .3s; }
 
