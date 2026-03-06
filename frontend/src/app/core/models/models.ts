@@ -59,6 +59,8 @@ export interface Daily {
   user?: User;
   projectTimes: ProjectTime[];
   createdAt?: string;
+  canEdit?: boolean;
+  editRequestStatus?: 'PENDING' | 'APPROVED' | 'REJECTED' | null;
 }
 
 export interface DailyByDate {
@@ -72,6 +74,20 @@ export interface DailyByDate {
 
 export interface PendingResponse {
   date: string; pending: User[]; submitted: User[]; total: number; submittedCount: number;
+}
+
+export interface DailyEditRequest {
+  id: number;
+  dailyId: number;
+  dailyDate: string;
+  requestedBy: User;
+  reviewedBy?: User;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  reason?: string;
+  note?: string;
+  createdAt?: string;
+  reviewedAt?: string;
+  usedAt?: string;
 }
 
 export interface LoginRequest  { username: string; password: string; }

@@ -6,10 +6,14 @@ import com.daily.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+
 import java.io.StringWriter;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -18,10 +22,28 @@ public class DailyService {
     private final DailyRepository   dailyRepository;
     private final UserRepository    userRepository;
     private final ProjectRepository projectRepository;
+    private final DailyEditRequestRepository dailyEditRequestRepository;
 
     @Transactional
     public DailyResponse saveOrUpdate(User user, DailyRequest req) {
-        Daily daily = dailyRepository.findByUserAndDailyDate(user, req.getDailyDate()).orElse(new Daily());
+        Daily daily = dailyRepository.findByUserAndDailyDate(user, req.getDailyDate()).orElse(null);
+        boolean updatingExisting = daily != null;
+
+        if (!updatingExisting) {
+            daily = new Daily();
+        } else if (user.getRole() != User.Role.ADMIN) {
+            DailyEditRequest approval = dailyEditRequestRepository
+                .findFirstByDailyAndRequestedByAndStatusAndUsedAtIsNullOrderByReviewedAtDescCreatedAtDesc(
+                    daily, user, DailyEditRequest.Status.APPROVED
+                )
+                .orElseThrow(() -> new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "Voce precisa de aprovacao do admin para alterar essa daily."
+                ));
+            approval.setUsedAt(LocalDateTime.now());
+            dailyEditRequestRepository.save(approval);
+        }
+
         daily.setUser(user);
         daily.setDailyDate(req.getDailyDate());
         daily.setDoneYesterday(req.getDoneYesterday());
@@ -46,7 +68,11 @@ public class DailyService {
     }
 
     public Optional<DailyResponse> getByUserAndDate(User user, LocalDate date) {
-        return dailyRepository.findByUserAndDailyDate(user, date).map(this::toResponse);
+        return dailyRepository.findByUserAndDailyDate(user, date).map(d -> {
+            DailyResponse response = toResponse(d);
+            applyEditPermission(response, user, d);
+            return response;
+        });
     }
 
     public List<DailyResponse> getMyHistory(User user) {
@@ -138,6 +164,57 @@ public class DailyService {
         return projectRepository.findById(id).map(p->{ p.setActive(!p.isActive()); projectRepository.save(p); return true; }).orElse(false);
     }
 
+    @Transactional
+    public DailyEditRequestResponse requestEditPermission(User user, DailyEditRequestCreate req) {
+        if (user.getRole() == User.Role.ADMIN) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Admins nao precisam solicitar alteracao.");
+        }
+
+        Daily daily = dailyRepository.findByUserAndDailyDate(user, req.getDailyDate())
+            .orElseThrow(() -> new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "Daily nao encontrada para a data informada."
+            ));
+
+        Optional<DailyEditRequest> pending = dailyEditRequestRepository
+            .findFirstByDailyAndRequestedByAndStatusOrderByCreatedAtDesc(daily, user, DailyEditRequest.Status.PENDING);
+        if (pending.isPresent()) {
+            return toEditRequestResponse(pending.get());
+        }
+
+        Optional<DailyEditRequest> approvedUnused = dailyEditRequestRepository
+            .findFirstByDailyAndRequestedByAndStatusAndUsedAtIsNullOrderByReviewedAtDescCreatedAtDesc(
+                daily, user, DailyEditRequest.Status.APPROVED
+            );
+        if (approvedUnused.isPresent()) {
+            return toEditRequestResponse(approvedUnused.get());
+        }
+
+        DailyEditRequest editRequest = new DailyEditRequest();
+        editRequest.setDaily(daily);
+        editRequest.setRequestedBy(user);
+        editRequest.setStatus(DailyEditRequest.Status.PENDING);
+        editRequest.setRequestReason(req.getReason());
+        return toEditRequestResponse(dailyEditRequestRepository.save(editRequest));
+    }
+
+    public List<DailyEditRequestResponse> getEditRequests(DailyEditRequest.Status status) {
+        DailyEditRequest.Status resolved = status != null ? status : DailyEditRequest.Status.PENDING;
+        return dailyEditRequestRepository.findByStatusOrderByCreatedAtAsc(resolved).stream()
+            .map(this::toEditRequestResponse)
+            .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public DailyEditRequestResponse approveEditRequest(User admin, Long requestId, DailyEditRequestDecision decision) {
+        return reviewEditRequest(admin, requestId, decision, DailyEditRequest.Status.APPROVED);
+    }
+
+    @Transactional
+    public DailyEditRequestResponse rejectEditRequest(User admin, Long requestId, DailyEditRequestDecision decision) {
+        return reviewEditRequest(admin, requestId, decision, DailyEditRequest.Status.REJECTED);
+    }
+
     public DailyResponse toResponse(Daily d) {
         DailyResponse r = new DailyResponse();
         r.setId(d.getId()); r.setDailyDate(d.getDailyDate());
@@ -153,6 +230,8 @@ public class DailyService {
             ProjectTimeResponse ptr=new ProjectTimeResponse(); ptr.setId(pt.getId());
             ptr.setProjectName(pt.getProjectName()); ptr.setPercentSpent(pt.getPercentSpent()); return ptr;
         }).collect(Collectors.toList()));
+        r.setEditRequestStatus(null);
+        r.setCanEdit(true);
         return r;
     }
     public UserResponse toUserResponse(User u) {
@@ -162,6 +241,85 @@ public class DailyService {
     public ProjectResponse toProjectResponse(Project p) {
         ProjectResponse r=new ProjectResponse(); r.setId(p.getId()); r.setName(p.getName());
         r.setColor(p.getColor()); r.setActive(p.isActive()); r.setSortOrder(p.getSortOrder()); return r;
+    }
+
+    private DailyEditRequestResponse reviewEditRequest(
+        User admin,
+        Long requestId,
+        DailyEditRequestDecision decision,
+        DailyEditRequest.Status finalStatus
+    ) {
+        DailyEditRequest request = dailyEditRequestRepository.findById(requestId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Solicitacao nao encontrada."));
+
+        if (request.getStatus() != DailyEditRequest.Status.PENDING) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Solicitacao ja foi processada.");
+        }
+
+        request.setStatus(finalStatus);
+        request.setReviewedBy(admin);
+        request.setReviewedAt(LocalDateTime.now());
+        request.setReviewNote(decision != null ? decision.getNote() : null);
+        if (finalStatus == DailyEditRequest.Status.REJECTED) {
+            request.setUsedAt(null);
+        }
+
+        return toEditRequestResponse(dailyEditRequestRepository.save(request));
+    }
+
+    private DailyEditRequestResponse toEditRequestResponse(DailyEditRequest request) {
+        DailyEditRequestResponse response = new DailyEditRequestResponse();
+        response.setId(request.getId());
+        response.setDailyId(request.getDaily().getId());
+        response.setDailyDate(request.getDaily().getDailyDate());
+        response.setRequestedBy(toUserResponse(request.getRequestedBy()));
+        if (request.getReviewedBy() != null) {
+            response.setReviewedBy(toUserResponse(request.getReviewedBy()));
+        }
+        response.setStatus(request.getStatus());
+        response.setReason(request.getRequestReason());
+        response.setNote(request.getReviewNote());
+        response.setCreatedAt(request.getCreatedAt() != null ? request.getCreatedAt().toString() : null);
+        response.setReviewedAt(request.getReviewedAt() != null ? request.getReviewedAt().toString() : null);
+        response.setUsedAt(request.getUsedAt() != null ? request.getUsedAt().toString() : null);
+        return response;
+    }
+
+    private void applyEditPermission(DailyResponse response, User user, Daily daily) {
+        if (user.getRole() == User.Role.ADMIN) {
+            response.setCanEdit(true);
+            response.setEditRequestStatus(DailyEditRequest.Status.APPROVED);
+            return;
+        }
+
+        Optional<DailyEditRequest> approvedUnused = dailyEditRequestRepository
+            .findFirstByDailyAndRequestedByAndStatusAndUsedAtIsNullOrderByReviewedAtDescCreatedAtDesc(
+                daily, user, DailyEditRequest.Status.APPROVED
+            );
+        if (approvedUnused.isPresent()) {
+            response.setCanEdit(true);
+            response.setEditRequestStatus(DailyEditRequest.Status.APPROVED);
+            return;
+        }
+
+        Optional<DailyEditRequest> pending = dailyEditRequestRepository
+            .findFirstByDailyAndRequestedByAndStatusOrderByCreatedAtDesc(daily, user, DailyEditRequest.Status.PENDING);
+        if (pending.isPresent()) {
+            response.setCanEdit(false);
+            response.setEditRequestStatus(DailyEditRequest.Status.PENDING);
+            return;
+        }
+
+        Optional<DailyEditRequest> rejected = dailyEditRequestRepository
+            .findFirstByDailyAndRequestedByAndStatusOrderByCreatedAtDesc(daily, user, DailyEditRequest.Status.REJECTED);
+        if (rejected.isPresent()) {
+            response.setCanEdit(false);
+            response.setEditRequestStatus(DailyEditRequest.Status.REJECTED);
+            return;
+        }
+
+        response.setCanEdit(false);
+        response.setEditRequestStatus(null);
     }
 }
 

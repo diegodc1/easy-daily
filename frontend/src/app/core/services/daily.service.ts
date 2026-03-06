@@ -1,7 +1,16 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Daily, DailyByDate, User, UserRequest, AppProject, ProjectRequest, PendingResponse } from '../models/models';
+import {
+  Daily,
+  DailyByDate,
+  User,
+  UserRequest,
+  AppProject,
+  ProjectRequest,
+  PendingResponse,
+  DailyEditRequest,
+} from '../models/models';
 import { environment } from '../../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
@@ -19,6 +28,9 @@ export class DailyService {
   getHistory(): Observable<Daily[]> {
     return this.http.get<Daily[]>(`${this.base}/daily/history`);
   }
+  requestEditPermission(dailyDate: string, reason?: string): Observable<DailyEditRequest> {
+    return this.http.post<DailyEditRequest>(`${this.base}/daily/edit-requests`, { dailyDate, reason });
+  }
   getActiveProjects(): Observable<AppProject[]> {
     return this.http.get<AppProject[]>(`${this.base}/daily/projects`);
   }
@@ -34,6 +46,17 @@ export class DailyService {
   exportCsv(start: string, end: string): Observable<Blob> {
     const params = new HttpParams().set('start', start).set('end', end);
     return this.http.get(`${this.base}/admin/export/csv`, { params, responseType: 'blob' });
+  }
+  getEditRequests(status: 'PENDING' | 'APPROVED' | 'REJECTED' = 'PENDING'): Observable<DailyEditRequest[]> {
+    return this.http.get<DailyEditRequest[]>(`${this.base}/admin/edit-requests`, {
+      params: new HttpParams().set('status', status),
+    });
+  }
+  approveEditRequest(id: number, note?: string): Observable<DailyEditRequest> {
+    return this.http.patch<DailyEditRequest>(`${this.base}/admin/edit-requests/${id}/approve`, { note });
+  }
+  rejectEditRequest(id: number, note?: string): Observable<DailyEditRequest> {
+    return this.http.patch<DailyEditRequest>(`${this.base}/admin/edit-requests/${id}/reject`, { note });
   }
 
   // ── Project config ────────────────────────────────────────────

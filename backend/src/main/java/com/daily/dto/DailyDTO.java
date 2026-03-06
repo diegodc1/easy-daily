@@ -1,5 +1,6 @@
 package com.daily.dto;
 
+import com.daily.entity.DailyEditRequest;
 import com.daily.entity.User;
 import lombok.Data;
 import jakarta.validation.constraints.*;
@@ -71,6 +72,8 @@ public class DailyDTO {
         private UserResponse user;
         private List<ProjectTimeResponse> projectTimes;
         private String createdAt, updatedAt;
+        private boolean canEdit = true;
+        private DailyEditRequest.Status editRequestStatus;
     }
     @Data public static class DailyByDateResponse {
         private LocalDate date;
@@ -82,5 +85,28 @@ public class DailyDTO {
         private LocalDate date;
         private List<UserResponse> pending, submitted;
         private int total, submittedCount;
+    }
+
+    @Data public static class DailyEditRequestCreate {
+        @NotNull private LocalDate dailyDate;
+        @Size(max = 1000) private String reason;
+    }
+
+    @Data public static class DailyEditRequestDecision {
+        @Size(max = 1000) private String note;
+    }
+
+    @Data public static class DailyEditRequestResponse {
+        private Long id;
+        private Long dailyId;
+        private LocalDate dailyDate;
+        private UserResponse requestedBy;
+        private UserResponse reviewedBy;
+        private DailyEditRequest.Status status;
+        private String reason;
+        private String note;
+        private String createdAt;
+        private String reviewedAt;
+        private String usedAt;
     }
 }

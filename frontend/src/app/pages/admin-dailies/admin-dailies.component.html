@@ -2,20 +2,19 @@
   <div class="page-header">
     <div>
       <div class="page-title">Todas as Dailys</div>
-      <div class="page-subtitle">Resumo por data — clique em um dia para expandir</div>
+      <div class="page-subtitle">Resumo por data e aprovacao de alteracoes</div>
     </div>
     <button class="btn btn-secondary" (click)="exportCsv()" [disabled]="exporting">
       <span class="spinner" *ngIf="exporting"></span>
-      <span *ngIf="!exporting">⬇ Exportar CSV</span>
+      <span *ngIf="!exporting">Exportar CSV</span>
     </button>
   </div>
 
-  <!-- Pendentes de hoje -->
   <div class="pending-card" *ngIf="pending">
     <div class="pending-header">
       <div class="pending-title">
-        <span class="pending-icon">👁</span>
-        Hoje — Status das Dailys
+        <span class="pending-icon">Status</span>
+        Hoje - Status das Dailys
       </div>
       <div class="pending-progress">
         <div class="pending-progress-bar">
@@ -28,10 +27,9 @@
     </div>
 
     <div style="display:flex;gap:24px;flex-wrap:wrap;margin-top:12px">
-      <!-- Quem enviou -->
       <div style="flex:1;min-width:200px">
         <div style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">
-          ✓ Enviaram ({{ pending.submittedCount }})
+          Enviaram ({{ pending.submittedCount }})
         </div>
         <div class="member-chips">
           <div *ngFor="let u of pending.submitted" class="member-chip submitted">
@@ -42,27 +40,74 @@
         </div>
       </div>
 
-      <!-- Quem não enviou -->
       <div style="flex:1;min-width:200px">
         <div style="font-size:11px;font-weight:700;color:var(--danger);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">
-          ⏳ Pendentes ({{ pending.pending.length }})
+          Pendentes ({{ pending.pending.length }})
         </div>
         <div class="member-chips">
           <div *ngFor="let u of pending.pending" class="member-chip pending-chip">
             <span class="chip-avatar danger">{{ getInitials(u.fullName) }}</span>
             {{ u.fullName }}
           </div>
-          <div *ngIf="pending.pending.length === 0" style="color:var(--accent);font-size:13px">✓ Todos enviaram!</div>
+          <div *ngIf="pending.pending.length === 0" style="color:var(--accent);font-size:13px">Todos enviaram.</div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Filter -->
+  <div class="card" style="margin-bottom:20px">
+      <div class="card-header">
+          <div>
+              <div class="card-title">Solicitacoes de alteracao de daily</div>
+              <div style="font-size:12px;color:var(--text-muted);margin-top:4px">Apenas admins podem aprovar ou recusar</div>
+          </div>
+          <button class="btn btn-sm btn-secondary" (click)="loadEditRequests()" [disabled]="loadingRequests">Atualizar</button>
+      </div>
+
+      <div *ngIf="loadingRequests" class="empty-state"><span class="spinner"></span></div>
+      <div class="alert alert-error" *ngIf="requestActionError">{{ requestActionError }}</div>
+
+      <div *ngIf="!loadingRequests && pendingEditRequests.length === 0" class="info-box" style="text-align:center">
+          Nenhuma solicitacao pendente.
+      </div>
+
+      <div *ngIf="!loadingRequests && pendingEditRequests.length > 0" style="display:grid;gap:10px">
+          <div *ngFor="let r of pendingEditRequests" class="daily-member-card" style="margin:0">
+              <div class="member-header" style="margin-bottom:10px">
+                  <div>
+                      <div class="member-name">{{ r.requestedBy.fullName }}</div>
+                      <div class="member-date">{{ r.requestedBy.username }} | {{ formatDate(r.dailyDate) }}</div>
+                  </div>
+                  <span class="badge" style="background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.3);color:var(--warning)">PENDENTE</span>
+              </div>
+
+              <div class="daily-section" *ngIf="r.reason">
+                  <div class="daily-section-title">Motivo</div>
+                  <div class="daily-section-text">{{ r.reason }}</div>
+              </div>
+
+              <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:10px">
+                  <button class="btn btn-secondary"
+                          (click)="rejectRequest(r)"
+                          [disabled]="requestActionLoadingId === r.id">
+                      Recusar
+                  </button>
+                  <button class="btn btn-primary"
+                          (click)="approveRequest(r)"
+                          [disabled]="requestActionLoadingId === r.id">
+                      <span class="spinner" *ngIf="requestActionLoadingId === r.id"></span>
+                      Aprovar
+                  </button>
+              </div>
+          </div>
+      </div>
+  </div>
+
+
   <div class="filter-bar" style="margin-bottom:20px">
-    <label class="form-label" style="margin:0;white-space:nowrap">Período:</label>
+    <label class="form-label" style="margin:0;white-space:nowrap">Periodo:</label>
     <input type="date" class="form-control" style="width:auto" [(ngModel)]="filter.start">
-    <span style="color:var(--text-muted)">até</span>
+    <span style="color:var(--text-muted)">ate</span>
     <input type="date" class="form-control" style="width:auto" [(ngModel)]="filter.end">
     <button class="btn btn-primary btn-sm" (click)="load()">Filtrar</button>
   </div>
@@ -70,17 +115,14 @@
   <div *ngIf="loading" class="empty-state"><span class="spinner"></span></div>
 
   <div class="empty-state" *ngIf="!loading && groups.length === 0">
-    <div class="empty-icon">📋</div>
-    <div class="empty-text">Nenhuma daily no período selecionado</div>
+    <div class="empty-icon">-</div>
+    <div class="empty-text">Nenhuma daily no periodo selecionado</div>
   </div>
 
-  <!-- Date Groups (collapsed by default) -->
   <div *ngFor="let group of groups" class="day-group">
-
-    <!-- Summary row — always visible, click to expand -->
     <div class="day-summary" (click)="toggleExpand(group.date)" [class.expanded]="isExpanded(group.date)">
       <div class="day-summary-left">
-        <span class="expand-icon">{{ isExpanded(group.date) ? '▾' : '▸' }}</span>
+        <span class="expand-icon">{{ isExpanded(group.date) ? 'v' : '>' }}</span>
         <div class="day-date-label">{{ formatDate(group.date) }}</div>
       </div>
       <div class="day-summary-stats">
@@ -101,7 +143,6 @@
           <span class="day-stat-label">pendentes</span>
         </span>
 
-        <!-- Avatars of who submitted -->
         <div class="avatar-stack">
           <div *ngFor="let d of group.dailies.slice(0, 6)" class="avatar-sm-stack" [title]="d.user?.fullName">
             {{ getInitials(d.user?.fullName) }}
@@ -109,9 +150,8 @@
           <div *ngIf="group.dailies.length > 6" class="avatar-sm-stack more">+{{ group.dailies.length - 6 }}</div>
         </div>
 
-        <!-- Pending avatars -->
         <div class="avatar-stack" *ngIf="group.pendingUsers && group.pendingUsers.length > 0">
-          <div *ngFor="let u of group.pendingUsers.slice(0, 3)" class="avatar-sm-stack pending-av" [title]="u.fullName + ' — pendente'">
+          <div *ngFor="let u of group.pendingUsers.slice(0, 3)" class="avatar-sm-stack pending-av" [title]="u.fullName + ' - pendente'">
             {{ getInitials(u.fullName) }}
           </div>
           <div *ngIf="group.pendingUsers.length > 3" class="avatar-sm-stack pending-av">+{{ group.pendingUsers.length - 3 }}</div>
@@ -119,12 +159,9 @@
       </div>
     </div>
 
-    <!-- Expanded detail -->
     <div class="day-detail" *ngIf="isExpanded(group.date)">
-
-      <!-- Pending warning inside expanded -->
       <div class="pending-inline" *ngIf="group.pendingUsers && group.pendingUsers.length > 0">
-        <span style="color:var(--danger);font-weight:700">⏳ Ainda não enviaram:</span>
+        <span style="color:var(--danger);font-weight:700">Ainda nao enviaram:</span>
         <span *ngFor="let u of group.pendingUsers" class="pending-name">{{ u.fullName }}</span>
       </div>
 
@@ -138,24 +175,23 @@
             </div>
             <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;align-items:center">
               <span class="badge badge-protocols" *ngIf="(d.totalProtocols ?? 0) > 0">{{ d.totalProtocols ?? 0 }} prot.</span>
-              <span class="blocker-badge" *ngIf="d.hasBlocker">⚠ Bloqueio</span>
+              <span class="blocker-badge" *ngIf="d.hasBlocker">Bloqueio</span>
             </div>
           </div>
 
           <div class="daily-section">
-            <div class="daily-section-title"><span>✅</span> Feito ontem</div>
-            <div class="daily-section-text">{{ d.doneYesterday || '—' }}</div>
+            <div class="daily-section-title">Feito ontem</div>
+            <div class="daily-section-text">{{ d.doneYesterday || '-' }}</div>
           </div>
           <div class="daily-section">
-            <div class="daily-section-title"><span>🎯</span> Hoje</div>
-            <div class="daily-section-text">{{ d.doingToday || '—' }}</div>
+            <div class="daily-section-title">Hoje</div>
+            <div class="daily-section-text">{{ d.doingToday || '-' }}</div>
           </div>
           <div *ngIf="d.hasBlocker" class="daily-section">
-            <div class="daily-section-title" style="color:var(--danger)">⛔ Bloqueios</div>
+            <div class="daily-section-title" style="color:var(--danger)">Bloqueios</div>
             <div class="daily-section-text">{{ d.blockers }}</div>
           </div>
 
-          <!-- Project % pills -->
           <div class="project-pills" *ngIf="d.projectTimes?.length">
             <div *ngFor="let pt of d.projectTimes" class="project-pill">
               <span class="pill-project">{{ pt.projectName }}</span>

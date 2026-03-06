@@ -39,6 +39,13 @@ public class DailyController {
         return ResponseEntity.ok(dailyService.getMyHistory(user));
     }
 
+    @PostMapping("/edit-requests")
+    public ResponseEntity<DailyEditRequestResponse> requestEditPermission(
+            @AuthenticationPrincipal User user,
+            @Valid @RequestBody DailyEditRequestCreate req) {
+        return ResponseEntity.ok(dailyService.requestEditPermission(user, req));
+    }
+
     // Public endpoint so the frontend can load projects without admin token
     @GetMapping("/projects")
     public ResponseEntity<List<ProjectResponse>> getActiveProjects() {
