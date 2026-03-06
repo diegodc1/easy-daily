@@ -25,7 +25,7 @@ public class AuthController {
             .filter(u -> u.isActive() && passwordEncoder.matches(req.getPassword(), u.getPassword()))
             .map(u -> ResponseEntity.ok(new LoginResponse(
                 jwtUtil.generateToken(u.getUsername()),
-                u.getUsername(), u.getFullName(), u.getRole().name()
+                u.getUsername(), u.getFullName(), u.getRole().name(), u.getBitrixId()
             )))
             .orElse(ResponseEntity.status(401).build());
     }

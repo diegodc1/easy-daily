@@ -14,19 +14,20 @@ public class DailyDTO {
         @NotBlank private String password;
     }
     @Data public static class LoginResponse {
-        private String token, username, fullName, role;
-        public LoginResponse(String t, String u, String f, String r) { token=t;username=u;fullName=f;role=r; }
+        private String token, username, fullName, role, bitrixId;
+        public LoginResponse(String t, String u, String f, String r, String b) { token=t;username=u;fullName=f;role=r; bitrixId=b;}
     }
     @Data public static class UserRequest {
         @NotBlank @Size(min=3,max=50) private String username;
         @NotBlank @Size(min=3)        private String password;
         @NotBlank @Size(max=100)      private String fullName;
         @Email                        private String email;
+        @Size(max=100)                private String bitrixId;
         private User.Role role = User.Role.MEMBER;
     }
     @Data public static class UserResponse {
         private Long id;
-        private String username, fullName, email, role;
+        private String username, fullName, email, bitrixId, role;
         private boolean active;
     }
     @Data public static class ProjectRequest {
@@ -108,5 +109,13 @@ public class DailyDTO {
         private String createdAt;
         private String reviewedAt;
         private String usedAt;
+    }
+
+    @Data public static class ProtocolCountsResponse {
+        private Integer protocolFA = 0;
+        private Integer protocolIMP = 0;
+        private Integer protocolDE = 0;
+        private Integer protocolDI = 0;
+        private Integer protocolCO = 0;
     }
 }

@@ -36,6 +36,7 @@ export interface AppProject {
 
 export interface User {
   id: number; username: string; fullName: string; email: string;
+  bitrixId?: string;
   role: 'ADMIN' | 'MEMBER'; active: boolean;
 }
 
@@ -91,6 +92,6 @@ export interface DailyEditRequest {
 }
 
 export interface LoginRequest  { username: string; password: string; }
-export interface LoginResponse { token: string; username: string; fullName: string; role: string; }
-export interface UserRequest   { username: string; password: string; fullName: string; email: string; role: string; }
+export interface LoginResponse { token: string; username: string; fullName: string; role: string; bitrixId?: string; }
+export interface UserRequest   { username: string; password: string; fullName: string; email: string; bitrixId?: string; role: string; }
 export interface ProjectRequest { name: string; color: string; sortOrder: number; }

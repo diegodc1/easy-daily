@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { map, Observable, of } from 'rxjs';
 import {
+  ProtocolCounts,
   Daily,
   DailyByDate,
   User,
@@ -12,11 +13,56 @@ import {
   DailyEditRequest,
 } from '../models/models';
 import { environment } from '../../../environments/environment';
+import { AuthService } from './auth.service';
 
 @Injectable({ providedIn: 'root' })
 export class DailyService {
   private base = environment.apiUrl;
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, private auth: AuthService) {}
+
+  private readNumber(source: any, keys: string[]): number | null {
+    if (!source || typeof source !== 'object') return null;
+    for (const key of keys) {
+      if (source[key] !== undefined && source[key] !== null && source[key] !== '') {
+        const val = Number(source[key]);
+        return Number.isFinite(val) ? val : 0;
+      }
+    }
+    return null;
+  }
+
+  private mapProtocolsResponse(res: any): ProtocolCounts | null {
+    console.log(res)
+    const candidates = [
+      res,
+      res?.data,
+      res?.result,
+      res?.resume,
+      res?.protocols,
+      Array.isArray(res) ? res[0] : null,
+      Array.isArray(res?.data) ? res.data[0] : null,
+    ].filter(Boolean);
+
+    for (const item of candidates) {
+      const fa = this.readNumber(item, ['FA', 'fa', 'protocolFA', 'protocol_fa', 'fa_count']);
+      const imp = this.readNumber(item, ['IMP', 'imp', 'IM', 'im', 'protocolIMP', 'protocol_imp', 'imp_count']);
+      const de = this.readNumber(item, ['DE', 'de', 'protocolDE', 'protocol_de', 'de_count']);
+      const di = this.readNumber(item, ['DI', 'di', 'protocolDI', 'protocol_di', 'di_count']);
+      const co = this.readNumber(item, ['CO', 'co', 'protocolCO', 'protocol_co', 'co_count']);
+
+      if (fa !== null || imp !== null || de !== null || di !== null || co !== null) {
+        return {
+          FA: fa ?? 0,
+          IMP: imp ?? 0,
+          DE: de ?? 0,
+          DI: di ?? 0,
+          CO: co ?? 0,
+        };
+      }
+    }
+
+    return null;
+  }
 
   // ── Member ────────────────────────────────────────────────────
   saveDaily(d: Partial<Daily>): Observable<Daily> {
@@ -24,6 +70,16 @@ export class DailyService {
   }
   getByDate(date: string): Observable<Daily> {
     return this.http.get<Daily>(`${this.base}/daily/date/${date}`);
+  }
+  getTodayProtocols(): Observable<ProtocolCounts | null> {
+    const bitrixId = this.auth.getUser()?.bitrixId?.trim();
+    if (!bitrixId) return of(null);
+
+    const url = `${environment.protocolsResumeBaseUrl}/${encodeURIComponent(bitrixId)}`;
+    console.log(url)
+    return this.http.get<any>(url).pipe(
+      map(res => this.mapProtocolsResponse(res))
+    );
   }
   getHistory(): Observable<Daily[]> {
     return this.http.get<Daily[]>(`${this.base}/daily/history`);

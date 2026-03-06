@@ -12,6 +12,9 @@
 
   <div class="alert alert-success" *ngIf="saveSuccess">Daily salva com sucesso.</div>
   <div class="alert alert-error" *ngIf="saveError">{{ saveError }}</div>
+    <div class="alert alert-success" *ngIf="protocolSyncMessage && !protocolSyncMessage.startsWith('Nao foi')">{{ protocolSyncMessage }}</div>
+<!--    <div class="alert alert-info" *ngIf="protocolSyncMessage && protocolSyncMessage.startsWith('Buscando')">{{ protocolSyncMessage }}</div>-->
+    <div class="alert alert-error" *ngIf="protocolSyncMessage && protocolSyncMessage.startsWith('Nao foi')">{{ protocolSyncMessage }}</div>
 
   <div class="card" *ngIf="isEditLocked" style="margin-bottom:20px;border-color:var(--warning)">
     <div class="card-title" style="margin-bottom:8px">Alteracao bloqueada</div>

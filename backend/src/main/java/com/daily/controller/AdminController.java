@@ -123,6 +123,7 @@ public class AdminController {
         u.setPassword(passwordEncoder.encode(req.getPassword()));
         u.setFullName(req.getFullName());
         u.setEmail(req.getEmail());
+        u.setBitrixId(req.getBitrixId());
         u.setRole(req.getRole() != null ? req.getRole() : User.Role.MEMBER);
 
         return ResponseEntity.ok(dailyService.toUserResponse(userRepository.save(u)));
@@ -133,6 +134,7 @@ public class AdminController {
         return userRepository.findById(id).map(u -> {
             u.setFullName(req.getFullName());
             u.setEmail(req.getEmail());
+            u.setBitrixId(req.getBitrixId());
             if (req.getRole() != null) u.setRole(req.getRole());
             if (req.getPassword() != null && !req.getPassword().isBlank()) {
                 u.setPassword(passwordEncoder.encode(req.getPassword()));

@@ -29,6 +29,8 @@ export class DailyFormComponent implements OnInit {
   requestLoading = false;
   requestError = '';
   requestSuccess = '';
+  protocolSyncLoading = false;
+  protocolSyncMessage = '';
 
   readonly protocolTypes = PROTOCOL_TYPES;
   readonly protocolColors = PROTOCOL_COLORS;
@@ -64,9 +66,14 @@ export class DailyFormComponent implements OnInit {
     this.editRequestStatus = null;
     this.requestError = '';
     this.requestSuccess = '';
+    this.protocolSyncLoading = false;
+    this.protocolSyncMessage = '';
 
     this.svc.getByDate(this.selectedDate).pipe(catchError(() => of(null))).subscribe(d => {
-      if (!d) return;
+      if (!d) {
+        this.tryLoadTodayProtocols();
+        return;
+      }
       this.isExistingDaily = true;
       this.canEditCurrentDaily = d.canEdit ?? false;
       this.editRequestStatus = d.editRequestStatus ?? null;
@@ -79,6 +86,33 @@ export class DailyFormComponent implements OnInit {
   }
 
   onDateChange() { this.loadForDate(); }
+
+  private tryLoadTodayProtocols() {
+
+    if (!this.isTodaySelected()) return;
+    this.protocolSyncLoading = true;
+    this.protocolSyncMessage = 'Buscando seus protocolos no Bitrix...';
+    this.svc.getTodayProtocols().pipe(
+      catchError(() => of(null))
+    ).subscribe(protocols => {
+      console.log(protocols)
+      this.protocolSyncLoading = false;
+      if (!protocols) {
+        this.protocolSyncMessage = 'Nao foi possivel buscar protocolos automaticamente. Preencha manualmente.';
+        return;
+      }
+      this.form.protocolFA = protocols.FA ?? 0;
+      this.form.protocolIMP = protocols.IMP ?? 0;
+      this.form.protocolDE = protocols.DE ?? 0;
+      this.form.protocolDI = protocols.DI ?? 0;
+      this.form.protocolCO = protocols.CO ?? 0;
+      this.protocolSyncMessage = 'Protocolos do dia carregados automaticamente.';
+    });
+  }
+
+  private isTodaySelected(): boolean {
+    return this.selectedDate === new Date().toISOString().slice(0, 10);
+  }
 
   get isEditLocked(): boolean {
     return this.isExistingDaily && !this.canEditCurrentDaily;

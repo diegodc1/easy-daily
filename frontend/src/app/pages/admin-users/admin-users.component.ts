@@ -36,7 +36,14 @@ export class AdminUsersComponent implements OnInit {
 
   openEdit(u: User) {
     this.editingUser = u;
-    this.form        = { username: u.username, password: '', fullName: u.fullName, email: u.email ?? '', role: u.role };
+    this.form        = {
+      username: u.username,
+      password: '',
+      fullName: u.fullName,
+      email: u.email ?? '',
+      bitrixId: u.bitrixId ?? '',
+      role: u.role,
+    };
     this.formError   = '';
     this.showModal   = true;
   }
@@ -64,5 +71,7 @@ export class AdminUsersComponent implements OnInit {
     return n.split(' ').slice(0, 2).map(x => x[0]).join('').toUpperCase();
   }
 
-  emptyForm(): UserRequest { return { username: '', password: '', fullName: '', email: '', role: 'MEMBER' }; }
+  emptyForm(): UserRequest {
+    return { username: '', password: '', fullName: '', email: '', bitrixId: '', role: 'MEMBER' };
+  }
 }

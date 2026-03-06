@@ -1,4 +1,5 @@
 export const environment = {
   production: true,
-  apiUrl: '/daily-system/api'
+  apiUrl: '/daily-system/api',
+  protocolsResumeBaseUrl: 'http://10.10.51.188:9999/documentation/bitrix/inbox/resume'
 };

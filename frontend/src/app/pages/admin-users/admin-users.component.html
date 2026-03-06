@@ -2,7 +2,7 @@
   <div class="page-header">
     <div>
       <div class="page-title">Membros da Equipe</div>
-      <div class="page-subtitle">Gerencie os usuários do sistema</div>
+      <div class="page-subtitle">Gerencie os usuarios do sistema</div>
     </div>
     <button class="btn btn-primary" (click)="openCreate()">+ Novo Membro</button>
   </div>
@@ -12,11 +12,12 @@
       <thead>
         <tr>
           <th>Nome</th>
-          <th>Usuário</th>
+          <th>Usuario</th>
           <th>E-mail</th>
-          <th>Função</th>
+          <th>Bitrix ID</th>
+          <th>Funcao</th>
           <th>Status</th>
-          <th>Ações</th>
+          <th>Acoes</th>
         </tr>
       </thead>
       <tbody>
@@ -30,7 +31,8 @@
           <td style="font-family:var(--font-mono);font-size:13px;color:var(--text-muted)">
             {{ '@' + u.username }}
           </td>
-          <td style="color:var(--text-muted)">{{ u.email || '—' }}</td>
+          <td style="color:var(--text-muted)">{{ u.email || '-' }}</td>
+          <td style="font-family:var(--font-mono);font-size:13px;color:var(--text-muted)">{{ u.bitrixId || '-' }}</td>
           <td>
             <span class="badge" [class.badge-admin]="u.role==='ADMIN'" [class.badge-member]="u.role==='MEMBER'">
               {{ u.role }}
@@ -48,29 +50,28 @@
           </td>
         </tr>
         <tr *ngIf="users.length === 0">
-          <td colspan="6" style="text-align:center;color:var(--text-muted);padding:40px">Nenhum usuário encontrado</td>
+          <td colspan="7" style="text-align:center;color:var(--text-muted);padding:40px">Nenhum usuario encontrado</td>
         </tr>
       </tbody>
     </table>
   </div>
 </div>
 
-<!-- Modal -->
 <div class="modal-overlay" *ngIf="showModal" (click)="showModal=false">
   <div class="modal" (click)="$event.stopPropagation()">
     <div class="modal-title">
       {{ editingUser ? 'Editar Membro' : 'Novo Membro' }}
-      <button class="modal-close" (click)="showModal=false">×</button>
+      <button class="modal-close" (click)="showModal=false">x</button>
     </div>
 
-    <div class="alert alert-error" *ngIf="formError">⚠ {{ formError }}</div>
+    <div class="alert alert-error" *ngIf="formError">{{ formError }}</div>
 
     <div class="form-group">
       <label class="form-label">Nome Completo</label>
-      <input class="form-control" [(ngModel)]="form.fullName" placeholder="João da Silva">
+      <input class="form-control" [(ngModel)]="form.fullName" placeholder="Joao da Silva">
     </div>
     <div class="form-group" *ngIf="!editingUser">
-      <label class="form-label">Usuário</label>
+      <label class="form-label">Usuario</label>
       <input class="form-control" [(ngModel)]="form.username" placeholder="joao.silva">
     </div>
     <div class="form-group">
@@ -78,11 +79,15 @@
       <input class="form-control" type="email" [(ngModel)]="form.email" placeholder="joao@empresa.com">
     </div>
     <div class="form-group">
-      <label class="form-label">{{ editingUser ? 'Nova Senha (deixe em branco para manter)' : 'Senha' }}</label>
-      <input class="form-control" type="password" [(ngModel)]="form.password" placeholder="••••••">
+      <label class="form-label">Bitrix ID</label>
+      <input class="form-control" [(ngModel)]="form.bitrixId" placeholder="123456">
     </div>
     <div class="form-group">
-      <label class="form-label">Função</label>
+      <label class="form-label">{{ editingUser ? 'Nova Senha (deixe em branco para manter)' : 'Senha' }}</label>
+      <input class="form-control" type="password" [(ngModel)]="form.password" placeholder="******">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Funcao</label>
       <select class="form-control" [(ngModel)]="form.role">
         <option value="MEMBER">Membro</option>
         <option value="ADMIN">Administrador</option>

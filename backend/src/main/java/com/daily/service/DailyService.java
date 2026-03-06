@@ -236,7 +236,8 @@ public class DailyService {
     }
     public UserResponse toUserResponse(User u) {
         UserResponse r=new UserResponse(); r.setId(u.getId()); r.setUsername(u.getUsername());
-        r.setFullName(u.getFullName()); r.setEmail(u.getEmail()); r.setRole(u.getRole().name()); r.setActive(u.isActive()); return r;
+        r.setFullName(u.getFullName()); r.setEmail(u.getEmail()); r.setBitrixId(u.getBitrixId());
+        r.setRole(u.getRole().name()); r.setActive(u.isActive()); return r;
     }
     public ProjectResponse toProjectResponse(Project p) {
         ProjectResponse r=new ProjectResponse(); r.setId(p.getId()); r.setName(p.getName());

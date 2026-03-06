@@ -28,6 +28,9 @@ public class User {
     @Column(length = 100)
     private String email;
 
+    @Column(length = 100)
+    private String bitrixId;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Role role = Role.MEMBER;
