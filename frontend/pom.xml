@@ -18,6 +18,7 @@
                 <version>3.3.2</version>
                 <configuration>
                     <warSourceDirectory>dist/daily-frontend/browser</warSourceDirectory>
+                    <webXml>src/assets/WEB-INF/web.xml</webXml>
                     <failOnMissingWebXml>false</failOnMissingWebXml>
                 </configuration>
             </plugin>
