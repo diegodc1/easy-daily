@@ -18,7 +18,7 @@ public class DailyDTO {
     }
     @Data public static class UserRequest {
         @NotBlank @Size(min=3,max=50) private String username;
-        @NotBlank @Size(min=6)        private String password;
+        @NotBlank @Size(min=3)        private String password;
         @NotBlank @Size(max=100)      private String fullName;
         @Email                        private String email;
         private User.Role role = User.Role.MEMBER;
