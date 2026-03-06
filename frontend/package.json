@@ -1,12 +1,12 @@
 {
-  "name": "daily-frontend",
+  "name": "daily",
   "version": "1.0.0",
   "scripts": {
     "ng": "ng",
     "start": "ng serve --host 0.0.0.0 --port 4200",
     "build": "ng build",
     "build:prod": "ng build --configuration production",
-    "deploy": "ng build --configuration production --base-href /daily-frontend/ && mvn package tomcat7:redeploy -DskipTests"
+    "deploy": "ng build --base-href /daily/ && mvn clean package tomcat7:redeploy -DskipTests"
   },
   "dependencies": {
     "@angular/animations": "^17.0.0",
