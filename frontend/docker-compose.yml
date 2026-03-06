@@ -1,0 +1,13 @@
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: daily-frontend
+    ports:
+      - "${FRONTEND_PORT:-80}:80"
+    environment:
+      BACKEND_URL: "${BACKEND_URL:-http://host.docker.internal:8080}"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped

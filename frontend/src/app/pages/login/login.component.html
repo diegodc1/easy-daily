@@ -1,0 +1,25 @@
+<div class="login-page">
+  <div class="login-bg"></div>
+  <div class="login-box fade-in">
+    <div class="login-logo">
+      <div class="login-title">⬡ DAILY</div>
+      <div class="login-sub">Sistema de Reuniões Diárias</div>
+    </div>
+
+    <div class="alert alert-error" *ngIf="error">⚠ {{ error }}</div>
+
+    <div class="form-group">
+      <label class="form-label">Usuário</label>
+      <input class="form-control" [(ngModel)]="form.username" placeholder="seu.usuario" (keyup.enter)="login()">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Senha</label>
+      <input class="form-control" type="password" [(ngModel)]="form.password" placeholder="••••••" (keyup.enter)="login()">
+    </div>
+
+    <button class="btn btn-primary" style="width:100%;justify-content:center" (click)="login()" [disabled]="loading">
+      <span class="spinner" *ngIf="loading"></span>
+      {{ loading ? 'Entrando...' : 'Entrar' }}
+    </button>
+  </div>
+</div>

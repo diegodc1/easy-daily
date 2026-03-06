@@ -1,0 +1,139 @@
+<div class="fade-in">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Minha Daily</div>
+      <div class="page-subtitle">{{ todayStr }}</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <label class="form-label" style="margin:0;white-space:nowrap">Data:</label>
+      <input type="date" class="form-control" style="width:auto" [(ngModel)]="selectedDate" (change)="onDateChange()">
+    </div>
+  </div>
+
+  <div class="alert alert-success" *ngIf="saveSuccess">✓ Daily salva com sucesso!</div>
+  <div class="alert alert-error"   *ngIf="saveError">⚠ {{ saveError }}</div>
+
+  <!-- Atividades + Bloqueios -->
+  <div class="grid-2" style="gap:20px;margin-bottom:20px">
+    <div class="card">
+      <div class="card-title" style="margin-bottom:16px">📋 Atividades</div>
+      <div class="form-group">
+        <label class="form-label">✅ O que foi feito ontem</label>
+        <textarea class="form-control" rows="4" [(ngModel)]="form.doneYesterday" placeholder="Tarefas concluídas..."></textarea>
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">🎯 O que vai fazer hoje</label>
+        <textarea class="form-control" rows="4" [(ngModel)]="form.doingToday" placeholder="Planejado para hoje..."></textarea>
+      </div>
+    </div>
+
+    <div class="card" [style.border-color]="form.hasBlocker ? 'var(--danger)' : ''">
+      <div class="card-title" style="margin-bottom:16px">🚧 Bloqueios</div>
+      <div class="form-group">
+        <label class="form-label">Tem algum bloqueio?</label>
+        <div class="toggle-wrap">
+          <label class="toggle">
+            <input type="checkbox" [(ngModel)]="form.hasBlocker">
+            <span class="toggle-slider"></span>
+          </label>
+          <span [style.color]="form.hasBlocker ? 'var(--danger)' : 'var(--text-muted)'">
+            {{ form.hasBlocker ? '⛔ Sim, tenho bloqueios' : 'Sem bloqueios' }}
+          </span>
+        </div>
+      </div>
+      <div class="form-group" *ngIf="form.hasBlocker">
+        <label class="form-label">Descreva os bloqueios</label>
+        <textarea class="form-control" rows="5" [(ngModel)]="form.blockers" placeholder="O que está impedindo seu progresso?"></textarea>
+      </div>
+      <div class="info-box" *ngIf="!form.hasBlocker">
+        <div style="font-weight:600;color:var(--accent);margin-bottom:4px">✓ Sem impedimentos</div>
+        Nenhum bloqueio hoje.
+      </div>
+    </div>
+  </div>
+
+  <!-- Protocolos por tipo -->
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-header" style="margin-bottom:16px">
+      <div>
+        <div class="card-title">📋 Protocolos por Tipo</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:4px">Quantidade atual de cada tipo de protocolo que você possui</div>
+      </div>
+      <div class="pct-badge" style="background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.3);color:var(--warning)">
+        {{ totalProtocols() }} total
+      </div>
+    </div>
+
+    <div class="protocol-grid">
+      <div *ngFor="let type of protocolTypes" class="protocol-card" [style.--pcolor]="protocolColor(type)">
+        <div class="protocol-type-label">{{ type }}</div>
+        <div class="protocol-type-desc">{{ protocolLabels[type] }}</div>
+        <div class="protocol-counter">
+          <button class="proto-btn" (click)="setProtocol(type, getProtocol(type) - 1)">−</button>
+          <input class="proto-input" type="number" min="0"
+                 [ngModel]="getProtocol(type)"
+                 (ngModelChange)="setProtocol(type, $event)">
+          <button class="proto-btn" (click)="setProtocol(type, getProtocol(type) + 1)">+</button>
+        </div>
+        <div class="protocol-bar-mini">
+          <div [style.width]="totalProtocols() > 0 ? (getProtocol(type) / totalProtocols() * 100) + '%' : '0%'"
+               [style.background]="protocolColor(type)"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Projetos: % do tempo -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">⏱ Distribuição de Tempo por Projeto</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:4px">% do seu tempo gasto em cada projeto no dia anterior</div>
+      </div>
+      <div class="pct-badge" [class.over]="pctWarning()">{{ totalPct() }}% total</div>
+    </div>
+
+    <div class="pct-bar-outer">
+      <div *ngFor="let pt of form.projectTimes" class="pct-bar-seg"
+           [style.width]="barWidth(pt)" [style.background]="colorOf(pt.projectName)"
+           [title]="pt.projectName + ': ' + pt.percentSpent + '%'">
+      </div>
+    </div>
+
+    <div *ngIf="projects.length === 0" class="info-box" style="text-align:center">
+      Nenhum projeto configurado. Peça ao administrador para adicionar projetos.
+    </div>
+
+    <div class="pt-header pt-header-2col" *ngIf="projects.length > 0">
+      <div>Projeto</div>
+      <div>% do Tempo</div>
+    </div>
+
+    <div class="pt-row pt-row-2col" *ngFor="let pt of form.projectTimes">
+      <div class="pt-project-name">
+        <span class="pt-dot" [style.background]="colorOf(pt.projectName)"></span>
+        {{ pt.projectName }}
+      </div>
+      <div class="pt-pct-cell">
+        <input class="form-control" type="number" [(ngModel)]="pt.percentSpent" min="0" max="100" step="5" placeholder="0">
+        <span class="pct-symbol">%</span>
+        <div class="pct-mini-bar">
+          <div [style.width]="barWidth(pt)" [style.background]="colorOf(pt.projectName)"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pt-totals" *ngIf="projects.length > 0">
+      <span>Total: <strong [style.color]="pctWarning() ? 'var(--danger)' : 'var(--accent)'">{{ totalPct() }}%</strong>
+        <span class="warn-msg" *ngIf="pctWarning()"> ⚠ Ultrapassa 100%</span>
+      </span>
+    </div>
+  </div>
+
+  <div style="margin-top:24px;display:flex;justify-content:flex-end">
+    <button class="btn btn-primary" style="padding:12px 40px;font-size:15px" (click)="save()" [disabled]="loading">
+      <span class="spinner" *ngIf="loading"></span>
+      {{ loading ? 'Salvando...' : '💾 Salvar Daily' }}
+    </button>
+  </div>
+</div>

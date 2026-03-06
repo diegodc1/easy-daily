@@ -1,0 +1,10 @@
+.idea/
+**/.idea/
+
+# Frontend (Angular/Node)
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+
+# Backend (Java/Maven)
+backend/target/

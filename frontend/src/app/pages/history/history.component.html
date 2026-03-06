@@ -1,0 +1,57 @@
+<div class="fade-in">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Meu Histórico</div>
+      <div class="page-subtitle">Suas dailys anteriores</div>
+    </div>
+  </div>
+
+  <div *ngIf="loading" class="empty-state"><span class="spinner"></span></div>
+
+  <div class="empty-state" *ngIf="!loading && history.length === 0">
+    <div class="empty-icon">📭</div>
+    <div class="empty-text">Nenhuma daily encontrada</div>
+  </div>
+
+  <div *ngFor="let d of history" class="daily-member-card" [class.has-blocker]="d.hasBlocker" style="margin-bottom:14px">
+    <div class="member-header">
+      <div class="member-name">{{ formatDate(d.dailyDate) }}</div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <span *ngIf="(d.totalProtocols ?? 0) > 0" class="badge badge-protocols">{{ d.totalProtocols ?? 0 }} protocolos</span>
+        <span class="blocker-badge" *ngIf="d.hasBlocker">⚠ Bloqueio</span>
+      </div>
+    </div>
+
+    <div class="grid-2" style="margin-bottom:12px">
+      <div class="daily-section">
+        <div class="daily-section-title"><span>✅</span> Feito ontem</div>
+        <div class="daily-section-text">{{ d.doneYesterday || '—' }}</div>
+      </div>
+      <div class="daily-section">
+        <div class="daily-section-title"><span>🎯</span> Hoje</div>
+        <div class="daily-section-text">{{ d.doingToday || '—' }}</div>
+      </div>
+    </div>
+
+    <div *ngIf="d.hasBlocker" class="daily-section" style="margin-bottom:12px">
+      <div class="daily-section-title" style="color:var(--danger)">⛔ Bloqueios</div>
+      <div class="daily-section-text">{{ d.blockers }}</div>
+    </div>
+
+    <!-- Protocol badges -->
+    <div class="proto-badges" *ngIf="(d.totalProtocols ?? 0) > 0">
+      <span class="proto-badge" *ngIf="d.protocolFA"  style="--pcolor:#00e5a0">FA {{ d.protocolFA }}</span>
+      <span class="proto-badge" *ngIf="d.protocolIMP" style="--pcolor:#3b82f6">IMP {{ d.protocolIMP }}</span>
+      <span class="proto-badge" *ngIf="d.protocolDE"  style="--pcolor:#f59e0b">DE {{ d.protocolDE }}</span>
+      <span class="proto-badge" *ngIf="d.protocolDI"  style="--pcolor:#f43f5e">DI {{ d.protocolDI }}</span>
+      <span class="proto-badge" *ngIf="d.protocolCO"  style="--pcolor:#a855f7">CO {{ d.protocolCO }}</span>
+    </div>
+
+    <div class="project-pills" *ngIf="d.projectTimes?.length">
+      <div *ngFor="let pt of d.projectTimes" class="project-pill">
+        <span class="pill-project">{{ pt.projectName }}</span>
+        <span class="pill-pct">{{ pt.percentSpent }}%</span>
+      </div>
+    </div>
+  </div>
+</div>

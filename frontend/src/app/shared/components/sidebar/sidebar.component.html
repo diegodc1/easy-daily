@@ -1,0 +1,30 @@
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-text">⬡ DAILY</div>
+    <div class="logo-sub">Standup Board</div>
+  </div>
+
+  <a class="nav-link" routerLink="/daily"   routerLinkActive="active"><span class="nav-icon">📝</span> Minha Daily</a>
+  <a class="nav-link" routerLink="/history" routerLinkActive="active"><span class="nav-icon">📅</span> Histórico</a>
+
+  <ng-container *ngIf="auth.isAdmin()">
+    <div class="nav-divider"></div>
+    <div class="nav-section-label">Admin</div>
+    <a class="nav-link" routerLink="/dashboard"      routerLinkActive="active"><span class="nav-icon">📊</span> Dashboard</a>
+    <a class="nav-link" routerLink="/admin/dailies"  routerLinkActive="active"><span class="nav-icon">📋</span> Todas as Dailys</a>
+    <a class="nav-link" routerLink="/admin/projects" routerLinkActive="active"><span class="nav-icon">🗂</span> Projetos</a>
+    <a class="nav-link" routerLink="/admin/users"    routerLinkActive="active"><span class="nav-icon">👥</span> Membros</a>
+  </ng-container>
+
+  <div class="sidebar-bottom">
+    <button class="theme-toggle" (click)="theme.toggle()" [title]="theme.isDark ? 'Mudar para tema claro' : 'Mudar para tema escuro'">
+      <span *ngIf="theme.isDark">☀️ Tema Claro</span>
+      <span *ngIf="!theme.isDark">🌙 Tema Escuro</span>
+    </button>
+    <div class="sidebar-user">
+      <div class="user-name">{{ auth.getUser()?.fullName }}</div>
+      <div class="user-role">{{ auth.getUser()?.role }}</div>
+      <button class="btn-logout" (click)="auth.logout()">↪ Sair</button>
+    </div>
+  </div>
+</nav>

@@ -1,0 +1,92 @@
+<div class="fade-in">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Projetos</div>
+      <div class="page-subtitle">Configure os projetos disponíveis para a equipe</div>
+    </div>
+    <button class="btn btn-primary" (click)="openCreate()">+ Novo Projeto</button>
+  </div>
+
+  <div class="card">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Cor</th>
+          <th>Nome</th>
+          <th>Ordem</th>
+          <th>Status</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let p of projects" [style.opacity]="p.active ? 1 : 0.45">
+          <td><span class="color-swatch" [style.background]="p.color"></span></td>
+          <td><strong>{{ p.name }}</strong></td>
+          <td style="font-family:var(--font-mono);color:var(--text-muted)">{{ p.sortOrder }}</td>
+          <td>
+            <span class="badge" [class.badge-member]="p.active" [class.badge-inactive]="!p.active">
+              {{ p.active ? 'Ativo' : 'Inativo' }}
+            </span>
+          </td>
+          <td style="display:flex;gap:8px">
+            <button class="btn btn-secondary btn-sm" (click)="openEdit(p)">Editar</button>
+            <button class="btn btn-sm" (click)="toggle(p)"
+                    [class.btn-danger]="p.active" [class.btn-secondary]="!p.active">
+              {{ p.active ? 'Desativar' : 'Ativar' }}
+            </button>
+          </td>
+        </tr>
+        <tr *ngIf="projects.length === 0">
+          <td colspan="5" style="text-align:center;color:var(--text-muted);padding:40px">Nenhum projeto cadastrado</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" *ngIf="showModal" (click)="showModal=false">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <div class="modal-title">
+      {{ editing ? 'Editar Projeto' : 'Novo Projeto' }}
+      <button class="modal-close" (click)="showModal=false">×</button>
+    </div>
+
+    <div class="alert alert-error" *ngIf="formError">⚠ {{ formError }}</div>
+
+    <div class="form-group">
+      <label class="form-label">Nome do Projeto</label>
+      <input class="form-control" [(ngModel)]="form.name" placeholder="Ex: MeuProjeto">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Cor</label>
+      <div class="color-palette">
+        <div *ngFor="let c of palette" class="color-option"
+             [style.background]="c"
+             [class.selected]="form.color === c"
+             (click)="pickColor(c)">
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:10px">
+        <span class="color-swatch large" [style.background]="form.color"></span>
+        <input class="form-control" type="color" [(ngModel)]="form.color" style="width:60px;height:38px;padding:2px 4px;cursor:pointer">
+        <span style="font-size:13px;color:var(--text-muted)">{{ form.color }}</span>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Ordem de Exibição</label>
+      <input class="form-control" type="number" [(ngModel)]="form.sortOrder" min="0" placeholder="0">
+      <div style="font-size:12px;color:var(--text-muted);margin-top:5px">Menor número aparece primeiro</div>
+    </div>
+
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px">
+      <button class="btn btn-secondary" (click)="showModal=false">Cancelar</button>
+      <button class="btn btn-primary" (click)="save()" [disabled]="saving">
+        <span class="spinner" *ngIf="saving"></span>
+        {{ saving ? 'Salvando...' : 'Salvar' }}
+      </button>
+    </div>
+  </div>
+</div>
