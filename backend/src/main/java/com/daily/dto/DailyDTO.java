@@ -29,6 +29,7 @@ public class DailyDTO {
         private Long id;
         private String username, fullName, email, bitrixId, role;
         private boolean active;
+        private List<Long> visibleProjectIds;
     }
     @Data public static class ProjectRequest {
         @NotBlank @Size(max=100) private String name;
@@ -130,5 +131,13 @@ public class DailyDTO {
         private Integer protocolDE = 0;
         private Integer protocolDI = 0;
         private Integer protocolCO = 0;
+    }
+
+    @Data public static class UserProjectPreferencesRequest {
+        private List<Long> projectIds;
+    }
+
+    @Data public static class UserProjectPreferencesResponse {
+        private List<Long> projectIds;
     }
 }

@@ -50,15 +50,15 @@
             <div style="display:flex;gap:10px;align-items:end">
               <select class="form-control" [(ngModel)]="selectedTaskProject" [ngModelOptions]="{standalone: true}">
                 <option value="" disabled>Selecione um projeto</option>
-                <option *ngFor="let p of projects" [value]="p.name">{{ p.name }}</option>
+                <option *ngFor="let p of visibleProjects" [value]="p.name">{{ p.name }}</option>
               </select>
               <button class="btn btn-secondary btn-sm" style="height: 2.5rem" type="button" (click)="addProjectBlock()" [disabled]="!selectedTaskProject"><span class="material-symbols-outlined">add_circle</span></button>
             </div>
         </div>
 
-        <div *ngIf="taskProjects.length === 0" class="info-box">Adicione um projeto, informe o percentual e inclua tarefas que voce concluiu ontem.</div>
+        <div *ngIf="visibleTaskProjects.length === 0" class="info-box">Adicione um projeto, informe o percentual e inclua tarefas que voce concluiu ontem.</div>
 
-        <div *ngFor="let projectName of taskProjects" class="card" style="padding:14px;background:var(--surface2);border-color:var(--border);margin-bottom:12px">
+        <div *ngFor="let projectName of visibleTaskProjects" class="card" style="padding:14px;background:var(--surface2);border-color:var(--border);margin-bottom:12px">
           <div class="card-header" style="margin-bottom:10px">
             <div>
               <div class="card-title">{{ projectName }}</div>
@@ -103,8 +103,49 @@
       <div style="display:flex;flex-direction:column;gap:20px">
       <div style="display:grid;gap:12px">
         <div class="card">
-          <div class="card-title" style="margin-bottom:10px">O que vai fazer hoje</div>
-          <textarea class="form-control" rows="8" [(ngModel)]="form.doingToday" placeholder="Descreva o plano do dia de hoje..."></textarea>
+          <div class="card-title" style="margin-bottom:16px">O que vai fazer hoje por Projeto</div>
+
+          <div class="form-group" style="margin-bottom:14px">
+            <label class="form-label">Adicionar projeto no plano de hoje</label>
+            <div style="display:flex;gap:10px;align-items:end">
+              <select class="form-control" [(ngModel)]="selectedTodayProject" [ngModelOptions]="{standalone: true}">
+                <option value="" disabled>Selecione um projeto</option>
+                <option *ngFor="let p of visibleProjects" [value]="p.name">{{ p.name }}</option>
+              </select>
+              <button class="btn btn-secondary btn-sm" style="height:2.5rem" type="button" (click)="addTodayProjectBlock()" [disabled]="!selectedTodayProject">
+                <span class="material-symbols-outlined">add_circle</span>
+              </button>
+            </div>
+          </div>
+
+          <div *ngIf="visibleTodayProjects.length === 0" class="info-box">Adicione um projeto e inclua tarefas que voce vai fazer hoje.</div>
+
+          <div *ngFor="let projectName of visibleTodayProjects" class="card" style="padding:14px;background:var(--surface2);border-color:var(--border);margin-bottom:12px">
+            <div class="card-header" style="margin-bottom:10px">
+              <div>
+                <div class="card-title">{{ projectName }}</div>
+              </div>
+              <div style="display:flex;gap:8px">
+                <button class="btn btn-secondary btn-sm" type="button" (click)="addTodayTask(projectName)">+ Tarefa</button>
+                <button class="btn btn-danger btn-sm" type="button" (click)="removeTodayProjectBlock(projectName)">Remover projeto</button>
+              </div>
+            </div>
+
+            <div *ngFor="let task of getTodayTasksByProject(projectName); let i = index"
+                 style="display:grid;grid-template-columns:170px 1fr auto;gap:8px;margin-bottom:8px;align-items:center">
+              <div class="project-pill" style="margin:0;justify-content:center">
+                <span class="pill-project">{{ projectName }}</span>
+              </div>
+              <input class="form-control"
+                     [ngModel]="task.description"
+                     (ngModelChange)="task.description = $event"
+                     [ngModelOptions]="{standalone: true}"
+                     placeholder="Descricao da tarefa">
+              <button class="btn btn-danger btn-sm" type="button" (click)="removeTodayTask(task)">-</button>
+            </div>
+
+            <div class="info-box" *ngIf="getTodayTasksByProject(projectName).length === 0">Nenhuma tarefa neste projeto.</div>
+          </div>
         </div>
 
         <div class="card" [style.border-color]="form.hasBlocker ? 'var(--danger)' : ''">
@@ -174,22 +215,22 @@
       </div>
 
       <div class="pct-bar-outer">
-        <div *ngFor="let pt of form.projectTimes" class="pct-bar-seg"
+        <div *ngFor="let pt of visibleProjectTimes" class="pct-bar-seg"
              [style.width]="barWidth(pt)" [style.background]="colorOf(pt.projectName)"
              [title]="pt.projectName + ': ' + pt.percentSpent + '%'">
         </div>
       </div>
 
-      <div *ngIf="projects.length === 0" class="info-box" style="text-align:center">
+      <div *ngIf="visibleProjects.length === 0" class="info-box" style="text-align:center">
         Nenhum projeto configurado. Peca ao administrador para adicionar projetos.
       </div>
 
-      <div class="pt-header pt-header-2col" *ngIf="projects.length > 0">
+      <div class="pt-header pt-header-2col" *ngIf="visibleProjects.length > 0">
         <div>Projeto</div>
         <div>% do Tempo</div>
       </div>
 
-      <div class="pt-row pt-row-2col" *ngFor="let pt of form.projectTimes">
+      <div class="pt-row pt-row-2col" *ngFor="let pt of visibleProjectTimes">
         <div class="pt-project-name">
           <span class="pt-dot" [style.background]="colorOf(pt.projectName)"></span>
           {{ pt.projectName }}
@@ -203,7 +244,7 @@
         </div>
       </div>
 
-      <div class="pt-totals" *ngIf="projects.length > 0">
+      <div class="pt-totals" *ngIf="visibleProjects.length > 0">
         <span>Total: <strong [style.color]="pctWarning() ? 'var(--danger)' : 'var(--accent)'">{{ totalPct() }}%</strong>
           <span class="warn-msg" *ngIf="pctWarning()"> Ultrapassa 100%</span>
         </span>

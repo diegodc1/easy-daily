@@ -35,6 +35,9 @@ public class User {
     @Column(nullable = false)
     private Role role = Role.MEMBER;
 
+    @Column(name = "daily_visible_project_ids", length = 2000)
+    private String dailyVisibleProjectIds;
+
     private boolean active = true;
 
     public enum Role {

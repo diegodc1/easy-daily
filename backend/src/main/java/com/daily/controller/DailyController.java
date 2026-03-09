@@ -51,4 +51,25 @@ public class DailyController {
     public ResponseEntity<List<ProjectResponse>> getActiveProjects() {
         return ResponseEntity.ok(dailyService.listProjects(true));
     }
+
+    @GetMapping("/projects/preferences")
+    public ResponseEntity<UserProjectPreferencesResponse> getProjectPreferences(
+            @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(dailyService.getProjectPreferences(user));
+    }
+
+    @PutMapping("/projects/preferences")
+    public ResponseEntity<UserProjectPreferencesResponse> saveProjectPreferences(
+            @AuthenticationPrincipal User user,
+            @RequestBody UserProjectPreferencesRequest req) {
+        return ResponseEntity.ok(dailyService.saveProjectPreferences(user, req));
+    }
+
+    // Backward-compatible endpoint for clients using /daily/projects as preferences save path
+    @PutMapping("/projects")
+    public ResponseEntity<UserProjectPreferencesResponse> saveProjectPreferencesLegacy(
+            @AuthenticationPrincipal User user,
+            @RequestBody UserProjectPreferencesRequest req) {
+        return ResponseEntity.ok(dailyService.saveProjectPreferences(user, req));
+    }
 }

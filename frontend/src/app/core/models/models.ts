@@ -103,3 +103,4 @@ export interface LoginRequest  { username: string; password: string; }
 export interface LoginResponse { token: string; username: string; fullName: string; role: string; bitrixId?: string; }
 export interface UserRequest   { username: string; password: string; fullName: string; email: string; bitrixId?: string; role: string; }
 export interface ProjectRequest { name: string; color: string; sortOrder: number; }
+export interface UserProjectPreferences { projectIds: number[]; }

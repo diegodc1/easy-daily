@@ -24,8 +24,12 @@ export class DailyFormComponent implements OnInit {
   todayStr = new Date().toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
   projects: AppProject[] = [];
+  visibleProjectIds: number[] = [];
   selectedTaskProject = '';
+  selectedTodayProject = '';
   taskProjects: string[] = [];
+  todayProjects: string[] = [];
+  todayTasks: { projectName: string; description: string }[] = [];
   form: Daily = this.emptyForm();
 
   saveSuccess = false;
@@ -51,9 +55,29 @@ export class DailyFormComponent implements OnInit {
   ngOnInit() {
     this.svc.getActiveProjects().pipe(catchError(() => of([]))).subscribe(p => {
       this.projects = p;
-      this.selectedTaskProject = this.projects[0]?.name ?? '';
-      this.loadForDate();
+      this.svc.getDailyProjectPreferences().pipe(catchError(() => of({ projectIds: p.map(x => x.id) }))).subscribe(pref => {
+        this.applyVisibleProjects(pref.projectIds ?? []);
+        this.ensureSelectedProjects();
+        this.loadForDate();
+      });
     });
+  }
+
+  get visibleProjects(): AppProject[] {
+    const visibleSet = new Set(this.visibleProjectIds);
+    return this.projects.filter(p => visibleSet.has(p.id));
+  }
+
+  get visibleTaskProjects(): string[] {
+    return this.taskProjects.filter(projectName => this.isVisibleProjectName(projectName));
+  }
+
+  get visibleTodayProjects(): string[] {
+    return this.todayProjects.filter(projectName => this.isVisibleProjectName(projectName));
+  }
+
+  get visibleProjectTimes(): ProjectTime[] {
+    return this.form.projectTimes.filter(pt => this.isVisibleProjectName(pt.projectName));
   }
 
   emptyForm(): Daily {
@@ -81,6 +105,8 @@ export class DailyFormComponent implements OnInit {
       tasks: [],
     };
     this.taskProjects = [];
+    this.todayProjects = [];
+    this.todayTasks = [];
     this.isExistingDaily = false;
     this.canEditCurrentDaily = true;
     this.editRequestStatus = null;
@@ -104,6 +130,8 @@ export class DailyFormComponent implements OnInit {
         tasks: d.tasks ?? [],
       };
       this.syncTaskProjectsFromTasks();
+      this.todayTasks = this.parseDoingToday(d.doingToday);
+      this.syncTodayProjectsFromTasks();
     });
   }
 
@@ -143,6 +171,34 @@ export class DailyFormComponent implements OnInit {
     this.taskProjects = Array.from(unique);
   }
 
+  private syncTodayProjectsFromTasks() {
+    const unique = new Set((this.todayTasks ?? []).map(t => t.projectName).filter(Boolean));
+    this.todayProjects = Array.from(unique);
+  }
+
+  private applyVisibleProjects(projectIds: number[]) {
+    const activeIds = this.projects.map(p => p.id);
+    const filtered = (projectIds ?? [])
+      .filter(id => activeIds.includes(id))
+      .filter((id, index, arr) => arr.indexOf(id) === index);
+    this.visibleProjectIds = filtered.length > 0 ? filtered : activeIds;
+  }
+
+  private ensureSelectedProjects() {
+    const firstVisibleName = this.visibleProjects[0]?.name ?? '';
+    if (!this.selectedTaskProject || !this.isVisibleProjectName(this.selectedTaskProject)) {
+      this.selectedTaskProject = firstVisibleName;
+    }
+    if (!this.selectedTodayProject || !this.isVisibleProjectName(this.selectedTodayProject)) {
+      this.selectedTodayProject = firstVisibleName;
+    }
+  }
+
+  private isVisibleProjectName(projectName: string): boolean {
+    const p = this.projects.find(x => x.name === projectName);
+    return !!p && this.visibleProjectIds.includes(p.id);
+  }
+
   addProjectBlock() {
     if (!this.selectedTaskProject) return;
     if (!this.taskProjects.includes(this.selectedTaskProject)) {
@@ -180,6 +236,61 @@ export class DailyFormComponent implements OnInit {
   removeTask(task: DailyTask) {
     if (!this.form.tasks) return;
     this.form.tasks = this.form.tasks.filter(t => t !== task);
+  }
+
+  addTodayProjectBlock() {
+    if (!this.selectedTodayProject) return;
+    if (!this.todayProjects.includes(this.selectedTodayProject)) {
+      this.todayProjects.push(this.selectedTodayProject);
+    }
+    if (this.getTodayTasksByProject(this.selectedTodayProject).length === 0) {
+      this.addTodayTask(this.selectedTodayProject);
+    }
+  }
+
+  removeTodayProjectBlock(projectName: string) {
+    this.todayProjects = this.todayProjects.filter(p => p !== projectName);
+    this.todayTasks = (this.todayTasks ?? []).filter(t => t.projectName !== projectName);
+  }
+
+  getTodayTasksByProject(projectName: string): { projectName: string; description: string }[] {
+    return (this.todayTasks ?? []).filter(t => t.projectName === projectName);
+  }
+
+  addTodayTask(projectName: string) {
+    if (!projectName) return;
+    if (!this.todayTasks) this.todayTasks = [];
+    if (!this.todayProjects.includes(projectName)) {
+      this.todayProjects.push(projectName);
+    }
+    this.todayTasks.push({ projectName, description: '' });
+  }
+
+  removeTodayTask(task: { projectName: string; description: string }) {
+    if (!this.todayTasks) return;
+    this.todayTasks = this.todayTasks.filter(t => t !== task);
+  }
+
+  private parseDoingToday(text: string | null | undefined): { projectName: string; description: string }[] {
+    const raw = (text ?? '').trim();
+    if (!raw) return [];
+
+    const parsed = raw
+      .split('\n')
+      .map(line => line.trim())
+      .filter(Boolean)
+      .map(line => {
+        const match = line.match(/^- \[(.+?)\]\s+(.+)$/);
+        if (!match) return null;
+        return { projectName: match[1].trim(), description: match[2].trim() };
+      })
+      .filter((x): x is { projectName: string; description: string } => !!x && !!x.projectName && !!x.description);
+
+    return parsed;
+  }
+
+  private buildDoingTodayFromTasks(tasks: { projectName: string; description: string }[]): string {
+    return tasks.map(t => `- [${t.projectName}] ${t.description}`).join('\n');
   }
 
   getProjectPercent(projectName: string): number {
@@ -242,7 +353,7 @@ export class DailyFormComponent implements OnInit {
   }
 
   totalPct(): number {
-    return this.form.projectTimes.reduce((s, p) => s + (+p.percentSpent || 0), 0);
+    return this.visibleProjectTimes.reduce((s, p) => s + (+p.percentSpent || 0), 0);
   }
 
   pctWarning(): boolean {
@@ -273,6 +384,11 @@ export class DailyFormComponent implements OnInit {
       .map(t => `- [${t.projectName}] ${t.description}`)
       .join('\n');
 
+    const sanitizedTodayTasks = (this.todayTasks ?? [])
+      .filter(t => !!t.projectName && (t.description ?? '').trim().length > 0)
+      .map(t => ({ projectName: t.projectName, description: t.description.trim() }));
+    const doingTodayFromTasks = this.buildDoingTodayFromTasks(sanitizedTodayTasks);
+
     this.loading = true;
     this.saveError = '';
     this.saveSuccess = false;
@@ -281,6 +397,7 @@ export class DailyFormComponent implements OnInit {
       ...this.form,
       dailyDate: this.selectedDate,
       doneYesterday: doneYesterdayFromTasks,
+      doingToday: doingTodayFromTasks,
       tasks: sanitizedTasks,
     }).pipe(
       catchError(() => {
@@ -301,6 +418,8 @@ export class DailyFormComponent implements OnInit {
         tasks: res.tasks ?? [],
       };
       this.syncTaskProjectsFromTasks();
+      this.todayTasks = this.parseDoingToday(res.doingToday);
+      this.syncTodayProjectsFromTasks();
       this.saveSuccess = true;
       setTimeout(() => (this.saveSuccess = false), 3500);
     });

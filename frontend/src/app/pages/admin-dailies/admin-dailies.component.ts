@@ -64,7 +64,6 @@ export class AdminDailiesComponent implements OnInit {
   approveRequest(req: DailyEditRequest) {
     this.requestActionLoadingId = req.id;
     this.requestActionError = '';
-    console.log(this.requestActionLoadingId)
     this.svc.approveEditRequest(req.id).pipe(catchError(() => of(null))).subscribe(res => {
       this.requestActionLoadingId = null;
       if (!res) {
@@ -123,5 +122,21 @@ export class AdminDailiesComponent implements OnInit {
   getInitials(name?: string) {
     if (!name) return '?';
     return name.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase();
+  }
+
+  parseProjectTasks(text: string | null | undefined): { projectName: string; description: string }[] {
+    const raw = (text ?? '').trim();
+    if (!raw) return [];
+
+    return raw
+      .split('\n')
+      .map(line => line.trim())
+      .filter(Boolean)
+      .map(line => {
+        const match = line.match(/^- \[(.+?)\]\s+(.+)$/);
+        if (!match) return null;
+        return { projectName: match[1].trim(), description: match[2].trim() };
+      })
+      .filter((t): t is { projectName: string; description: string } => !!t && !!t.projectName && !!t.description);
   }
 }

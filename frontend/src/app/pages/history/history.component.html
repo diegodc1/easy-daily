@@ -22,7 +22,7 @@
       </div>
     </div>
 
-    <div class="grid-2" style="margin-bottom:12px; gap: 1rem">
+    <div class="grid-2" style="margin-bottom:12px; gap: 3rem">
       <div class="daily-section">
         <div class="daily-section-title">Feito ontem</div>
         <div class="daily-section-text" *ngIf="!d.tasks?.length">{{ d.doneYesterday || '-' }}</div>
@@ -35,7 +35,15 @@
       </div>
       <div class="daily-section">
         <div class="daily-section-title">Hoje</div>
-        <div class="daily-section-text">{{ d.doingToday || '-' }}</div>
+        <ng-container *ngIf="parseProjectTasks(d.doingToday) as todayTasks">
+          <div class="daily-section-text" *ngIf="todayTasks.length === 0">{{ d.doingToday || '-' }}</div>
+          <div *ngIf="todayTasks.length > 0">
+            <div *ngFor="let t of todayTasks" class="project-pill" style="margin-bottom:6px">
+              <span class="pill-project">{{ t.projectName }}</span>
+              <span class="daily-section-text">{{ t.description }}</span>
+            </div>
+          </div>
+        </ng-container>
       </div>
     </div>
 

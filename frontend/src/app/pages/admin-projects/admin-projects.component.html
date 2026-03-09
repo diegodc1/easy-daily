@@ -2,24 +2,44 @@
   <div class="page-header">
     <div>
       <div class="page-title">Projetos</div>
-      <div class="page-subtitle">Configure os projetos disponíveis para a equipe</div>
+      <div class="page-subtitle">Selecione quais projetos voce quer ver nas suas listas. Acoes de cadastro e status sao apenas para admin.</div>
     </div>
-    <button class="btn btn-primary" (click)="openCreate()">+ Novo Projeto</button>
+    <button *ngIf="isAdmin" class="btn btn-primary" (click)="openCreate()">+ Novo Projeto</button>
+  </div>
+
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-header" style="margin-bottom:8px">
+      <div>
+        <div class="card-title">Visibilidade Pessoal</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:4px">Essa configuracao vale para a sua conta.</div>
+      </div>
+      <div style="font-size:12px;color:var(--text-muted)">
+        {{ prefSaving ? 'Salvando...' : (prefLoading ? 'Carregando...' : (visibleProjectIds.length + ' selecionado(s)')) }}
+      </div>
+    </div>
+    <div class="alert alert-error" *ngIf="prefError" style="margin-bottom:0">{{ prefError }}</div>
   </div>
 
   <div class="card">
     <table class="table">
       <thead>
         <tr>
+          <th>Exibir</th>
           <th>Cor</th>
           <th>Nome</th>
           <th>Ordem</th>
           <th>Status</th>
-          <th>Ações</th>
+          <th *ngIf="isAdmin">Acoes</th>
         </tr>
       </thead>
       <tbody>
         <tr *ngFor="let p of projects" [style.opacity]="p.active ? 1 : 0.45">
+          <td>
+            <input type="checkbox"
+                   [checked]="isProjectVisible(p.id)"
+                   (change)="onProjectVisibilityChange(p.id, $any($event.target).checked)"
+                   [disabled]="!canToggleProjectVisibility(p)">
+          </td>
           <td><span class="color-swatch" [style.background]="p.color"></span></td>
           <td><strong>{{ p.name }}</strong></td>
           <td style="font-family:var(--font-mono);color:var(--text-muted)">{{ p.sortOrder }}</td>
@@ -28,7 +48,7 @@
               {{ p.active ? 'Ativo' : 'Inativo' }}
             </span>
           </td>
-          <td style="display:flex;gap:8px">
+          <td *ngIf="isAdmin" style="display:flex;gap:8px">
             <button class="btn btn-secondary btn-sm" (click)="openEdit(p)">Editar</button>
             <button class="btn btn-sm" (click)="toggle(p)"
                     [class.btn-danger]="p.active" [class.btn-secondary]="!p.active">
@@ -37,22 +57,21 @@
           </td>
         </tr>
         <tr *ngIf="projects.length === 0">
-          <td colspan="5" style="text-align:center;color:var(--text-muted);padding:40px">Nenhum projeto cadastrado</td>
+          <td [attr.colspan]="isAdmin ? 6 : 5" style="text-align:center;color:var(--text-muted);padding:40px">Nenhum projeto cadastrado</td>
         </tr>
       </tbody>
     </table>
   </div>
 </div>
 
-<!-- Modal -->
 <div class="modal-overlay" *ngIf="showModal" (click)="showModal=false">
   <div class="modal" (click)="$event.stopPropagation()">
     <div class="modal-title">
       {{ editing ? 'Editar Projeto' : 'Novo Projeto' }}
-      <button class="modal-close" (click)="showModal=false">×</button>
+      <button class="modal-close" (click)="showModal=false">�</button>
     </div>
 
-    <div class="alert alert-error" *ngIf="formError">⚠ {{ formError }}</div>
+    <div class="alert alert-error" *ngIf="formError">{{ formError }}</div>
 
     <div class="form-group">
       <label class="form-label">Nome do Projeto</label>
@@ -76,9 +95,9 @@
     </div>
 
     <div class="form-group">
-      <label class="form-label">Ordem de Exibição</label>
+      <label class="form-label">Ordem de Exibicao</label>
       <input class="form-control" type="number" [(ngModel)]="form.sortOrder" min="0" placeholder="0">
-      <div style="font-size:12px;color:var(--text-muted);margin-top:5px">Menor número aparece primeiro</div>
+      <div style="font-size:12px;color:var(--text-muted);margin-top:5px">Menor numero aparece primeiro</div>
     </div>
 
     <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px">

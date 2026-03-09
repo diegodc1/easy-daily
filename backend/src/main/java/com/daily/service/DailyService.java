@@ -166,6 +166,51 @@ public class DailyService {
             : projectRepository.findAll().stream().sorted(Comparator.comparing(Project::getSortOrder)).collect(Collectors.toList());
         return list.stream().map(this::toProjectResponse).collect(Collectors.toList());
     }
+
+    public UserProjectPreferencesResponse getProjectPreferences(User user) {
+        List<Long> activeProjectIds = projectRepository.findByActiveTrueOrderBySortOrderAsc().stream()
+            .map(Project::getId)
+            .collect(Collectors.toList());
+        Set<Long> activeSet = new HashSet<>(activeProjectIds);
+
+        List<Long> selected = parseVisibleProjectIds(user.getDailyVisibleProjectIds()).stream()
+            .filter(activeSet::contains)
+            .distinct()
+            .collect(Collectors.toList());
+
+        if (selected.isEmpty()) {
+            selected = activeProjectIds;
+        }
+
+        UserProjectPreferencesResponse response = new UserProjectPreferencesResponse();
+        response.setProjectIds(selected);
+        return response;
+    }
+
+    @Transactional
+    public UserProjectPreferencesResponse saveProjectPreferences(User user, UserProjectPreferencesRequest req) {
+        List<Long> activeProjectIds = projectRepository.findByActiveTrueOrderBySortOrderAsc().stream()
+            .map(Project::getId)
+            .collect(Collectors.toList());
+        Set<Long> activeSet = new HashSet<>(activeProjectIds);
+
+        List<Long> selected = Optional.ofNullable(req.getProjectIds()).orElse(Collections.emptyList()).stream()
+            .filter(Objects::nonNull)
+            .filter(activeSet::contains)
+            .distinct()
+            .collect(Collectors.toList());
+
+        if (selected.isEmpty()) {
+            selected = activeProjectIds;
+        }
+
+        user.setDailyVisibleProjectIds(selected.stream().map(String::valueOf).collect(Collectors.joining(",")));
+        userRepository.save(user);
+
+        UserProjectPreferencesResponse response = new UserProjectPreferencesResponse();
+        response.setProjectIds(selected);
+        return response;
+    }
     @Transactional public ProjectResponse createProject(ProjectRequest req) {
         Project p = new Project(); p.setName(req.getName());
         p.setColor(req.getColor()!=null?req.getColor():"#00e5a0");
@@ -368,5 +413,21 @@ public class DailyService {
         int hh = totalMinutes / 60;
         int mm = totalMinutes % 60;
         return String.format("%02d:%02d", hh, mm);
+    }
+
+    private List<Long> parseVisibleProjectIds(String value) {
+        if (value == null || value.isBlank()) return Collections.emptyList();
+        return Arrays.stream(value.split(","))
+            .map(String::trim)
+            .filter(s -> !s.isEmpty())
+            .map(s -> {
+                try {
+                    return Long.parseLong(s);
+                } catch (NumberFormatException ex) {
+                    return null;
+                }
+            })
+            .filter(Objects::nonNull)
+            .collect(Collectors.toList());
     }
 }

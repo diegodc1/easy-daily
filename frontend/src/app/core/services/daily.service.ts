@@ -11,6 +11,7 @@ import {
   ProjectRequest,
   PendingResponse,
   DailyEditRequest,
+  UserProjectPreferences,
 } from '../models/models';
 import { environment } from '../../../environments/environment';
 import { AuthService } from './auth.service';
@@ -89,6 +90,12 @@ export class DailyService {
   }
   getActiveProjects(): Observable<AppProject[]> {
     return this.http.get<AppProject[]>(`${this.base}/daily/projects`);
+  }
+  getDailyProjectPreferences(): Observable<UserProjectPreferences> {
+    return this.http.get<UserProjectPreferences>(`${this.base}/daily/projects/preferences`);
+  }
+  saveDailyProjectPreferences(projectIds: number[]): Observable<UserProjectPreferences> {
+    return this.http.put<UserProjectPreferences>(`${this.base}/daily/projects/preferences`, { projectIds });
   }
 
   // ── Admin ─────────────────────────────────────────────────────
