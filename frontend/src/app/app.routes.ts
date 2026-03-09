@@ -9,6 +9,8 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/daily-form/daily-form.component').then(m => m.DailyFormComponent) },
   { path: 'pre-daily', canActivate: [authGuard],
     loadComponent: () => import('./pages/pre-daily/pre-daily.component').then(m => m.PreDailyComponent) },
+  { path: 'notes', canActivate: [authGuard],
+    loadComponent: () => import('./pages/general-notes/general-notes.component').then(m => m.GeneralNotesComponent) },
   { path: 'history', canActivate: [authGuard],
     loadComponent: () => import('./pages/history/history.component').then(m => m.HistoryComponent) },
   { path: 'dashboard', canActivate: [authGuard, adminGuard],

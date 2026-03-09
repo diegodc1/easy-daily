@@ -24,6 +24,7 @@ public class DailyService {
     private final ProjectRepository projectRepository;
     private final DailyEditRequestRepository dailyEditRequestRepository;
     private final PreDailyRepository preDailyRepository;
+    private final GeneralNoteRepository generalNoteRepository;
 
     @Transactional
     public DailyResponse saveOrUpdate(User user, DailyRequest req) {
@@ -137,6 +138,48 @@ public class DailyService {
     @Transactional
     public boolean deletePreDailyByUser(User user) {
         return preDailyRepository.deleteByUser(user) > 0;
+    }
+
+    public List<GeneralNoteResponse> listGeneralNotes(User user) {
+        return generalNoteRepository.findByUserOrderByUpdatedAtDescCreatedAtDesc(user).stream()
+            .map(this::toGeneralNoteResponse)
+            .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public GeneralNoteResponse createGeneralNote(User user, GeneralNoteRequest req) {
+        GeneralNote note = new GeneralNote();
+        note.setUser(user);
+        note.setProjectName(normalizeProjectName(req.getProjectName()));
+        note.setProtocol(cleanProtocol(req.getProtocol()));
+        note.setNoteText(req.getNoteText().trim());
+        return toGeneralNoteResponse(generalNoteRepository.save(note));
+    }
+
+    @Transactional
+    public GeneralNoteResponse updateGeneralNote(User user, Long id, GeneralNoteRequest req) {
+        GeneralNote note = generalNoteRepository.findByIdAndUser(id, user)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Anotacao nao encontrada."));
+        note.setProjectName(normalizeProjectName(req.getProjectName()));
+        note.setProtocol(cleanProtocol(req.getProtocol()));
+        note.setNoteText(req.getNoteText().trim());
+        return toGeneralNoteResponse(generalNoteRepository.save(note));
+    }
+
+    @Transactional
+    public GeneralNoteResponse setGeneralNoteFinished(User user, Long id, boolean finished) {
+        GeneralNote note = generalNoteRepository.findByIdAndUser(id, user)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Anotacao nao encontrada."));
+        note.setFinished(finished);
+        return toGeneralNoteResponse(generalNoteRepository.save(note));
+    }
+
+    @Transactional
+    public boolean deleteGeneralNote(User user, Long id) {
+        Optional<GeneralNote> note = generalNoteRepository.findByIdAndUser(id, user);
+        if (note.isEmpty()) return false;
+        generalNoteRepository.delete(note.get());
+        return true;
     }
 
     public List<DailyResponse> getMyHistory(User user) {
@@ -495,5 +538,29 @@ public class DailyService {
             }).collect(Collectors.toList()));
         }
         return r;
+    }
+
+    private GeneralNoteResponse toGeneralNoteResponse(GeneralNote note) {
+        GeneralNoteResponse response = new GeneralNoteResponse();
+        response.setId(note.getId());
+        response.setProjectName(note.getProjectName());
+        response.setProtocol(note.getProtocol());
+        response.setNoteText(note.getNoteText());
+        response.setFinished(note.isFinished());
+        response.setCreatedAt(note.getCreatedAt() != null ? note.getCreatedAt().toString() : null);
+        response.setUpdatedAt(note.getUpdatedAt() != null ? note.getUpdatedAt().toString() : null);
+        return response;
+    }
+
+    private String cleanProtocol(String protocol) {
+        if (protocol == null) return null;
+        String trimmed = protocol.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private String normalizeProjectName(String projectName) {
+        if (projectName == null) return "Geral";
+        String trimmed = projectName.trim();
+        return trimmed.isEmpty() ? "Geral" : trimmed;
     }
 }

@@ -13,6 +13,7 @@ import {
   DailyEditRequest,
   UserProjectPreferences,
   PreDaily,
+  GeneralNote,
 } from '../models/models';
 import { environment } from '../../../environments/environment';
 import { AuthService } from './auth.service';
@@ -87,6 +88,21 @@ export class DailyService {
   }
   deletePreDailyByDate(date: string): Observable<void> {
     return this.http.delete<void>(`${this.base}/daily/pre-daily/date/${date}`);
+  }
+  getGeneralNotes(): Observable<GeneralNote[]> {
+    return this.http.get<GeneralNote[]>(`${this.base}/daily/notes`);
+  }
+  createGeneralNote(note: Partial<GeneralNote>): Observable<GeneralNote> {
+    return this.http.post<GeneralNote>(`${this.base}/daily/notes`, note);
+  }
+  updateGeneralNote(id: number, note: Partial<GeneralNote>): Observable<GeneralNote> {
+    return this.http.put<GeneralNote>(`${this.base}/daily/notes/${id}`, note);
+  }
+  setGeneralNoteFinished(id: number, finished: boolean): Observable<GeneralNote> {
+    return this.http.patch<GeneralNote>(`${this.base}/daily/notes/${id}/finished`, { finished });
+  }
+  deleteGeneralNote(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/daily/notes/${id}`);
   }
   getTodayProtocols(): Observable<ProtocolCounts | null> {
     const bitrixId = this.auth.getUser()?.bitrixId?.trim();

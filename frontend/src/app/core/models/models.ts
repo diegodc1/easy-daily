@@ -118,3 +118,13 @@ export interface PreDaily {
   createdAt?: string;
   updatedAt?: string;
 }
+
+export interface GeneralNote {
+  id?: number;
+  projectName: string;
+  protocol?: string | null;
+  noteText: string;
+  finished?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}

@@ -80,6 +80,44 @@ public class DailyController {
             : ResponseEntity.notFound().build();
     }
 
+    @GetMapping("/notes")
+    public ResponseEntity<List<GeneralNoteResponse>> listGeneralNotes(
+            @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(dailyService.listGeneralNotes(user));
+    }
+
+    @PostMapping("/notes")
+    public ResponseEntity<GeneralNoteResponse> createGeneralNote(
+            @AuthenticationPrincipal User user,
+            @Valid @RequestBody GeneralNoteRequest req) {
+        return ResponseEntity.ok(dailyService.createGeneralNote(user, req));
+    }
+
+    @PutMapping("/notes/{id}")
+    public ResponseEntity<GeneralNoteResponse> updateGeneralNote(
+            @AuthenticationPrincipal User user,
+            @PathVariable Long id,
+            @Valid @RequestBody GeneralNoteRequest req) {
+        return ResponseEntity.ok(dailyService.updateGeneralNote(user, id, req));
+    }
+
+    @PatchMapping("/notes/{id}/finished")
+    public ResponseEntity<GeneralNoteResponse> setGeneralNoteFinished(
+            @AuthenticationPrincipal User user,
+            @PathVariable Long id,
+            @Valid @RequestBody GeneralNoteFinishRequest req) {
+        return ResponseEntity.ok(dailyService.setGeneralNoteFinished(user, id, req.getFinished()));
+    }
+
+    @DeleteMapping("/notes/{id}")
+    public ResponseEntity<Void> deleteGeneralNote(
+            @AuthenticationPrincipal User user,
+            @PathVariable Long id) {
+        return dailyService.deleteGeneralNote(user, id)
+            ? ResponseEntity.noContent().build()
+            : ResponseEntity.notFound().build();
+    }
+
     @PostMapping("/edit-requests")
     public ResponseEntity<DailyEditRequestResponse> requestEditPermission(
             @AuthenticationPrincipal User user,
