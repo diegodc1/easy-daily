@@ -44,6 +44,13 @@ export interface ProjectTime {
   id?: number; projectName: string; percentSpent: number;
 }
 
+export interface DailyTask {
+  id?: number;
+  projectName: string;
+  description: string;
+  hoursSpent: number;
+}
+
 export interface Daily {
   id?: number;
   dailyDate: string;
@@ -59,6 +66,7 @@ export interface Daily {
   totalProtocols?: number;   // computed by backend
   user?: User;
   projectTimes: ProjectTime[];
+  tasks?: DailyTask[];
   createdAt?: string;
   canEdit?: boolean;
   editRequestStatus?: 'PENDING' | 'APPROVED' | 'REJECTED' | null;

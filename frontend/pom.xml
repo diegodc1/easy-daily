@@ -32,6 +32,7 @@
                     <password>password</password>
                     <path>/daily</path>
                     <update>true</update>
+                    <webXml>src/assets/WEB-INF/web.xml</webXml>
                 </configuration>
             </plugin>
         </plugins>

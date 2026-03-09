@@ -50,6 +50,9 @@ public class Daily {
     @OneToMany(mappedBy = "daily", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProjectTime> projectTimes = new ArrayList<>();
 
+    @OneToMany(mappedBy = "daily", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<DailyTask> tasks = new ArrayList<>();
+
     @PrePersist  protected void onCreate() { createdAt = LocalDateTime.now(); updatedAt = LocalDateTime.now(); }
     @PreUpdate   protected void onUpdate() { updatedAt = LocalDateTime.now(); }
 
