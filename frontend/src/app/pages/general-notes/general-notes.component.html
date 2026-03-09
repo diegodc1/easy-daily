@@ -1,0 +1,121 @@
+<div class="fade-in">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Anotações Gerais</div>
+      <div class="page-subtitle">Post-its por projeto para registrar observacoes importantes</div>
+    </div>
+  </div>
+
+  <div class="alert alert-error" *ngIf="saveError">{{ saveError }}</div>
+  <div class="app-toast app-toast-success" *ngIf="saveSuccess">Anotacao salva com sucesso.</div>
+
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-title" style="margin-bottom:16px">Nova anotacao</div>
+    <div style="display:grid;grid-template-columns:220px 180px 1fr auto;gap:10px;align-items:end">
+      <div>
+        <label class="form-label">Projeto</label>
+        <select class="form-control" [(ngModel)]="newNote.projectName" [ngModelOptions]="{standalone: true}">
+          <option value="">Geral</option>
+          <option *ngFor="let p of projects" [value]="p.name">{{ p.name }}</option>
+        </select>
+      </div>
+      <div>
+        <label class="form-label">Protocolo</label>
+        <input class="form-control" [(ngModel)]="newNote.protocol" [ngModelOptions]="{standalone: true}" placeholder="Opcional">
+      </div>
+      <div>
+        <label class="form-label">Texto *</label>
+        <input class="form-control" [(ngModel)]="newNote.noteText" [ngModelOptions]="{standalone: true}" placeholder="Escreva sua anotacao">
+      </div>
+      <button class="btn btn-primary" type="button" (click)="addNote()" [disabled]="saving">
+        <span class="spinner" *ngIf="saving"></span>
+        {{ saving ? 'Salvando...' : 'Adicionar' }}
+      </button>
+    </div>
+  </div>
+
+  <div class="filter-bar" style="margin-bottom:18px">
+    <div style="min-width:220px">
+      <label class="form-label">Filtrar por projeto</label>
+      <select class="form-control" [(ngModel)]="filterProject" [ngModelOptions]="{standalone: true}">
+        <option value="ALL">Todos os projetos</option>
+        <option *ngFor="let p of projects" [value]="p.name">{{ p.name }}</option>
+      </select>
+    </div>
+    <div style="min-width:280px;flex:1">
+      <label class="form-label">Buscar texto</label>
+      <input class="form-control" [(ngModel)]="searchText" [ngModelOptions]="{standalone: true}" placeholder="Digite para buscar">
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;padding-top:18px">
+      <input id="showFinishedNotes" type="checkbox" [(ngModel)]="showFinished" [ngModelOptions]="{standalone: true}">
+      <label for="showFinishedNotes" style="font-size:13px;color:var(--text-muted)">Mostrar finalizadas</label>
+    </div>
+  </div>
+
+  <div class="empty-state" *ngIf="!loading && filteredNotes.length === 0">
+    <div class="empty-text">Nenhuma anotacao encontrada com os filtros atuais.</div>
+  </div>
+
+  <div class="postit-grid" *ngIf="filteredNotes.length > 0">
+    <div class="postit-card" *ngFor="let note of filteredNotes" [class.postit-finished]="note.finished">
+      <ng-container *ngIf="editingId !== note.id; else editMode">
+        <div class="postit-top">
+          <span class="postit-project">{{ note.projectName || 'Geral' }}</span>
+          <span class="postit-protocol" *ngIf="note.protocol">{{ note.protocol }}</span>
+        </div>
+        <div class="postit-text">{{ note.noteText }}</div>
+        <div class="postit-footer">
+          <span>{{ formatDate(note.updatedAt || note.createdAt) }}</span>
+          <div style="display:flex;gap:3px; align-items: end">
+            <button class="btn btn-sm icon-btn icon-btn-sm btn-edit-icon" type="button" (click)="startEdit(note)" title="Editar anotacao">
+              <span class="material-symbols-outlined">edit</span>
+            </button>
+            <button class="btn btn-sm icon-btn icon-btn-sm btn-finish-icon" type="button" (click)="toggleFinished(note)" [title]="note.finished ? 'Reabrir anotacao' : 'Finalizar anotacao'">
+              <span class="material-symbols-outlined">{{ note.finished ? 'undo' : 'task_alt' }}</span>
+            </button>
+            <button class="btn btn-delete-icon btn-sm icon-btn icon-btn-sm" type="button" (click)="deleteNote(note)" title="Remover anotacao">
+              <span class="material-symbols-outlined">delete</span>
+            </button>
+          </div>
+        </div>
+      </ng-container>
+
+      <ng-template #editMode>
+        <div style="display:grid;gap:8px">
+          <select class="form-control" [(ngModel)]="editDraft.projectName" [ngModelOptions]="{standalone: true}">
+            <option value="">Geral</option>
+            <option *ngFor="let p of projects" [value]="p.name">{{ p.name }}</option>
+          </select>
+          <input class="form-control" [(ngModel)]="editDraft.protocol" [ngModelOptions]="{standalone: true}" placeholder="Protocolo (opcional)">
+          <textarea class="form-control" rows="5" [(ngModel)]="editDraft.noteText" [ngModelOptions]="{standalone: true}" placeholder="Texto da anotacao"></textarea>
+          <div style="display:flex;gap:8px;justify-content:flex-end">
+            <button class="btn btn-secondary btn-sm" type="button" (click)="cancelEdit()" [disabled]="editSaving">Cancelar</button>
+            <button class="btn btn-primary btn-sm" type="button" (click)="saveEdit(note)" [disabled]="editSaving">
+              <span class="spinner" *ngIf="editSaving"></span>
+              {{ editSaving ? 'Salvando...' : 'Salvar' }}
+            </button>
+          </div>
+        </div>
+      </ng-template>
+    </div>
+  </div>
+
+  <div class="modal-overlay" *ngIf="showDeleteModal" (click)="closeDeleteModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-title">
+        Excluir Anotacao
+        <button class="modal-close" type="button" (click)="closeDeleteModal()">×</button>
+      </div>
+      <div style="font-size:14px;color:var(--text);margin-bottom:18px">
+        Deseja realmente excluir esta anotacao?
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button class="btn btn-secondary" type="button" (click)="closeDeleteModal()" [disabled]="deleteLoading">Cancelar</button>
+        <button class="btn btn-danger" type="button" (click)="confirmDeleteNote()" [disabled]="deleteLoading">
+          <span class="spinner" *ngIf="deleteLoading"></span>
+          {{ deleteLoading ? 'Excluindo...' : 'Confirmar' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
