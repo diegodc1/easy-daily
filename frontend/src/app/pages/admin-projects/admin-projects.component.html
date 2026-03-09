@@ -7,18 +7,7 @@
     <button *ngIf="isAdmin" class="btn btn-primary" (click)="openCreate()">+ Novo Projeto</button>
   </div>
 
-  <div class="card" style="margin-bottom:16px">
-    <div class="card-header" style="margin-bottom:8px">
-      <div>
-        <div class="card-title">Visibilidade Pessoal</div>
-        <div style="font-size:12px;color:var(--text-muted);margin-top:4px">Essa configuracao vale para a sua conta.</div>
-      </div>
-      <div style="font-size:12px;color:var(--text-muted)">
-        {{ prefSaving ? 'Salvando...' : (prefLoading ? 'Carregando...' : (visibleProjectIds.length + ' selecionado(s)')) }}
-      </div>
-    </div>
-    <div class="alert alert-error" *ngIf="prefError" style="margin-bottom:0">{{ prefError }}</div>
-  </div>
+  <div class="alert alert-error" *ngIf="prefError" style="margin-bottom:0">{{ prefError }}</div>
 
   <div class="card">
     <table class="table">
@@ -68,7 +57,7 @@
   <div class="modal" (click)="$event.stopPropagation()">
     <div class="modal-title">
       {{ editing ? 'Editar Projeto' : 'Novo Projeto' }}
-      <button class="modal-close" (click)="showModal=false">×</button>
+      <button class="modal-close" (click)="showModal=false">ï¿½</button>
     </div>
 
     <div class="alert alert-error" *ngIf="formError">{{ formError }}</div>

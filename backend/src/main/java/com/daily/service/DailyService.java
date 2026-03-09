@@ -23,6 +23,7 @@ public class DailyService {
     private final UserRepository    userRepository;
     private final ProjectRepository projectRepository;
     private final DailyEditRequestRepository dailyEditRequestRepository;
+    private final PreDailyRepository preDailyRepository;
 
     @Transactional
     public DailyResponse saveOrUpdate(User user, DailyRequest req) {
@@ -89,6 +90,53 @@ public class DailyService {
             applyEditPermission(response, user, d);
             return response;
         });
+    }
+
+    @Transactional
+    public PreDailyResponse saveOrUpdatePreDaily(User user, PreDailyRequest req) {
+        PreDaily preDaily = preDailyRepository.findFirstByUserOrderByUpdatedAtDesc(user).orElse(null);
+        if (preDaily == null) {
+            preDaily = new PreDaily();
+            preDaily.setDailyDate(req.getDailyDate() != null ? req.getDailyDate() : LocalDate.now());
+        }
+
+        preDaily.setUser(user);
+        if (req.getDailyDate() != null) {
+            preDaily.setDailyDate(req.getDailyDate());
+        } else if (preDaily.getDailyDate() == null) {
+            preDaily.setDailyDate(LocalDate.now());
+        }
+        preDaily.getTasks().clear();
+
+        if (req.getTasks() != null) {
+            for (PreDailyTaskRequest tr : req.getTasks()) {
+                PreDailyTask task = new PreDailyTask();
+                task.setPreDaily(preDaily);
+                task.setProjectName(tr.getProjectName());
+                task.setDescription(tr.getDescription());
+                preDaily.getTasks().add(task);
+            }
+        }
+
+        return toPreDailyResponse(preDailyRepository.save(preDaily));
+    }
+
+    public Optional<PreDailyResponse> getPreDailyByUserAndDate(User user, LocalDate date) {
+        return preDailyRepository.findFirstByUserOrderByUpdatedAtDesc(user).map(this::toPreDailyResponse);
+    }
+
+    @Transactional
+    public boolean deletePreDailyByUserAndDate(User user, LocalDate date) {
+        return preDailyRepository.deleteByUser(user) > 0;
+    }
+
+    public Optional<PreDailyResponse> getPreDailyByUser(User user) {
+        return preDailyRepository.findFirstByUserOrderByUpdatedAtDesc(user).map(this::toPreDailyResponse);
+    }
+
+    @Transactional
+    public boolean deletePreDailyByUser(User user) {
+        return preDailyRepository.deleteByUser(user) > 0;
     }
 
     public List<DailyResponse> getMyHistory(User user) {
@@ -429,5 +477,23 @@ public class DailyService {
             })
             .filter(Objects::nonNull)
             .collect(Collectors.toList());
+    }
+
+    private PreDailyResponse toPreDailyResponse(PreDaily d) {
+        PreDailyResponse r = new PreDailyResponse();
+        r.setId(d.getId());
+        r.setDailyDate(d.getDailyDate());
+        r.setCreatedAt(d.getCreatedAt() != null ? d.getCreatedAt().toString() : null);
+        r.setUpdatedAt(d.getUpdatedAt() != null ? d.getUpdatedAt().toString() : null);
+        if (d.getTasks() != null) {
+            r.setTasks(d.getTasks().stream().map(t -> {
+                PreDailyTaskResponse tr = new PreDailyTaskResponse();
+                tr.setId(t.getId());
+                tr.setProjectName(t.getProjectName());
+                tr.setDescription(t.getDescription());
+                return tr;
+            }).collect(Collectors.toList()));
+        }
+        return r;
     }
 }

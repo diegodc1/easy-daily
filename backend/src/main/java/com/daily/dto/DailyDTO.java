@@ -140,4 +140,28 @@ public class DailyDTO {
     @Data public static class UserProjectPreferencesResponse {
         private List<Long> projectIds;
     }
+
+    @Data public static class PreDailyTaskRequest {
+        @NotBlank private String projectName;
+        @NotBlank @Size(max = 2000) private String description;
+    }
+
+    @Data public static class PreDailyRequest {
+        private LocalDate dailyDate;
+        private List<PreDailyTaskRequest> tasks;
+    }
+
+    @Data public static class PreDailyTaskResponse {
+        private Long id;
+        private String projectName;
+        private String description;
+    }
+
+    @Data public static class PreDailyResponse {
+        private Long id;
+        private LocalDate dailyDate;
+        private List<PreDailyTaskResponse> tasks;
+        private String createdAt;
+        private String updatedAt;
+    }
 }

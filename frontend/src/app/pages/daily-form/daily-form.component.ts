@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DailyService } from '../../core/services/daily.service';
@@ -12,6 +12,7 @@ import {
   PROTOCOL_LABELS,
 } from '../../core/models/models';
 import { catchError, of } from 'rxjs';
+import tippy, { type Instance } from 'tippy.js';
 
 @Component({
   selector: 'app-daily-form',
@@ -19,7 +20,10 @@ import { catchError, of } from 'rxjs';
   imports: [CommonModule, FormsModule],
   templateUrl: './daily-form.component.html',
 })
-export class DailyFormComponent implements OnInit {
+export class DailyFormComponent implements OnInit, AfterViewInit, OnDestroy {
+  @ViewChild('replicateBtn') replicateBtn?: ElementRef<HTMLElement>;
+  @ViewChild('pullPreBtn') pullPreBtn?: ElementRef<HTMLElement>;
+
   selectedDate = new Date().toISOString().slice(0, 10);
   todayStr = new Date().toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
@@ -46,7 +50,10 @@ export class DailyFormComponent implements OnInit {
   protocolSyncLoading = false;
   protocolSyncMessage = '';
   showReplicateModal = false;
+  showPullPreDailyModal = false;
   replicateLoading = false;
+  pullPreDailyLoading = false;
+  private tooltipInstances: Instance[] = [];
 
   readonly protocolTypes = PROTOCOL_TYPES;
   readonly protocolColors = PROTOCOL_COLORS;
@@ -63,6 +70,14 @@ export class DailyFormComponent implements OnInit {
         this.loadForDate();
       });
     });
+  }
+
+  ngAfterViewInit(): void {
+    setTimeout(() => this.initTooltips(), 0);
+  }
+
+  ngOnDestroy(): void {
+    this.destroyTooltips();
   }
 
   get visibleProjects(): AppProject[] {
@@ -172,6 +187,52 @@ export class DailyFormComponent implements OnInit {
       this.saveSuccess = true;
       setTimeout(() => (this.saveSuccess = false), 3500);
     });
+  }
+
+  pullPreDaily() {
+    if (this.pullPreDailyLoading) return;
+    this.pullPreDailyLoading = true;
+    this.saveError = '';
+
+    this.svc.getPreDaily().pipe(catchError(() => of(null))).subscribe(pre => {
+      this.pullPreDailyLoading = false;
+      if (!pre) {
+        this.saveError = 'Nao existe pre-daily registrada para puxar.';
+        return;
+      }
+
+      const tasks: DailyTask[] = (pre.tasks ?? [])
+        .filter(t => !!t.projectName && (t.description ?? '').trim().length > 0)
+        .map(t => ({
+          projectName: t.projectName,
+          description: (t.description ?? '').trim(),
+          hoursSpent: 0,
+        }));
+
+      this.form.tasks = tasks;
+      this.syncTaskProjectsFromTasks();
+
+      this.form.doneYesterday = tasks.map(t => `- [${t.projectName}] ${t.description}`).join('\n');
+      this.saveSuccess = true;
+      setTimeout(() => (this.saveSuccess = false), 3500);
+    });
+  }
+
+  openPullPreDailyModal() {
+    if (this.loading || this.isEditLocked || this.pullPreDailyLoading) return;
+    this.saveError = '';
+    this.showPullPreDailyModal = true;
+  }
+
+  closePullPreDailyModal() {
+    if (this.pullPreDailyLoading) return;
+    this.showPullPreDailyModal = false;
+  }
+
+  confirmPullPreDaily() {
+    if (this.pullPreDailyLoading) return;
+    this.showPullPreDailyModal = false;
+    this.pullPreDaily();
   }
 
   private tryLoadTodayProtocols() {
@@ -486,20 +547,32 @@ export class DailyFormComponent implements OnInit {
     return (PROTOCOL_COLORS as any)[type] ?? '#888';
   }
 
-  showReplicatePopover(el: HTMLElement, anchor: HTMLElement) {
-    try {
-      const rect = anchor.getBoundingClientRect();
-      el.style.position = 'fixed';
-      el.style.left = `${rect.left + rect.width / 2}px`;
-      el.style.top = `${Math.max(8, rect.top - -80)}px`;
-      el.style.transform = 'translate(-50%, -100%)';
-      (el as any).showPopover?.();
-    } catch {}
+  private initTooltips() {
+    this.destroyTooltips();
+
+    if (this.replicateBtn?.nativeElement) {
+      this.tooltipInstances.push(
+        tippy(this.replicateBtn.nativeElement, {
+          content: 'Replicar daily do dia anterior',
+          placement: 'top',
+          maxWidth: 340,
+        })
+      );
+    }
+
+    if (this.pullPreBtn?.nativeElement) {
+      this.tooltipInstances.push(
+        tippy(this.pullPreBtn.nativeElement, {
+          content: 'Carregar pre-daily',
+          placement: 'top',
+          maxWidth: 340,
+        })
+      );
+    }
   }
 
-  hideReplicatePopover(el: HTMLElement) {
-    try {
-      (el as any).hidePopover?.();
-    } catch {}
+  private destroyTooltips() {
+    this.tooltipInstances.forEach(t => t.destroy());
+    this.tooltipInstances = [];
   }
 }

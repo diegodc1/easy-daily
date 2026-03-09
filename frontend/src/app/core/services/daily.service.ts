@@ -12,6 +12,7 @@ import {
   PendingResponse,
   DailyEditRequest,
   UserProjectPreferences,
+  PreDaily,
 } from '../models/models';
 import { environment } from '../../../environments/environment';
 import { AuthService } from './auth.service';
@@ -71,6 +72,21 @@ export class DailyService {
   }
   getByDate(date: string): Observable<Daily> {
     return this.http.get<Daily>(`${this.base}/daily/date/${date}`);
+  }
+  savePreDaily(d: Partial<PreDaily>): Observable<PreDaily> {
+    return this.http.post<PreDaily>(`${this.base}/daily/pre-daily`, d);
+  }
+  getPreDaily(): Observable<PreDaily> {
+    return this.http.get<PreDaily>(`${this.base}/daily/pre-daily`);
+  }
+  getPreDailyByDate(date: string): Observable<PreDaily> {
+    return this.http.get<PreDaily>(`${this.base}/daily/pre-daily/date/${date}`);
+  }
+  deletePreDaily(): Observable<void> {
+    return this.http.delete<void>(`${this.base}/daily/pre-daily`);
+  }
+  deletePreDailyByDate(date: string): Observable<void> {
+    return this.http.delete<void>(`${this.base}/daily/pre-daily/date/${date}`);
   }
   getTodayProtocols(): Observable<ProtocolCounts | null> {
     const bitrixId = this.auth.getUser()?.bitrixId?.trim();

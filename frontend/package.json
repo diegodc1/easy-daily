@@ -19,6 +19,7 @@
     "@angular/router": "^17.0.0",
     "material-symbols": "^0.40.2",
     "rxjs": "~7.8.0",
+    "tippy.js": "^6.3.7",
     "zone.js": "~0.14.2"
   },
   "devDependencies": {

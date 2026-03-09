@@ -1,0 +1,89 @@
+<div class="fade-in">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Pré-Daily</div>
+      <div class="page-subtitle">Registro geral de projetos e tarefas para carregar na daily de qualquer dia</div>
+    </div>
+  </div>
+
+  <div class="alert alert-error" *ngIf="saveError">{{ saveError }}</div>
+
+  <div class="card">
+    <div class="card-title" style="margin-bottom:16px">Atividades do Dia por Projeto</div>
+
+    <div class="form-group" style="margin-bottom:14px">
+      <label class="form-label">Adicionar projeto na pré-daily</label>
+      <div style="display:flex;gap:10px;align-items:end">
+        <select class="form-control" [(ngModel)]="selectedProject" [ngModelOptions]="{standalone: true}">
+          <option value="" disabled>Selecione um projeto</option>
+          <option *ngFor="let p of visibleProjects" [value]="p.name">{{ p.name }}</option>
+        </select>
+        <button class="btn btn-secondary btn-sm" style="height: 2.5rem" type="button" (click)="addProjectBlock()" [disabled]="!selectedProject">
+          <span class="material-symbols-outlined">add_circle</span>
+        </button>
+      </div>
+    </div>
+
+    <div *ngIf="visibleProjectBlocks.length === 0" class="info-box">Adicione um projeto e inclua tarefas que você concluiu hoje.</div>
+
+    <div *ngFor="let projectName of visibleProjectBlocks" class="card" style="padding:14px;background:var(--surface2);border-color:var(--border);margin-bottom:12px">
+      <div class="card-header" style="margin-bottom:10px">
+        <div>
+          <div class="card-title">{{ projectName }}</div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-secondary btn-sm" type="button" (click)="addTask(projectName)">+ Tarefa</button>
+          <button class="btn btn-danger btn-sm" type="button" (click)="removeProjectBlock(projectName)">Remover projeto</button>
+        </div>
+      </div>
+
+      <div *ngFor="let task of getTasksByProject(projectName); let i = index"
+           style="display:grid;grid-template-columns:170px 1fr auto;gap:8px;margin-bottom:8px;align-items:center">
+        <div class="project-pill" style="margin:0;justify-content:center">
+          <span class="pill-project">{{ projectName }}</span>
+        </div>
+        <input class="form-control"
+               [ngModel]="task.description"
+               (ngModelChange)="task.description = $event"
+               [ngModelOptions]="{standalone: true}"
+               placeholder="Descrição da tarefa">
+        <button class="btn btn-danger btn-sm" type="button" (click)="removeTask(task)">-</button>
+      </div>
+
+      <div class="info-box" *ngIf="getTasksByProject(projectName).length === 0">Nenhuma tarefa neste projeto.</div>
+    </div>
+  </div>
+
+  <div style="margin-top:24px;display:flex;justify-content:flex-end">
+    <button class="btn btn-danger" style="margin-right:10px" (click)="openClearModal()" [disabled]="loading || clearLoading">
+      Limpar Pré-Daily
+    </button>
+    <button class="btn btn-primary" style="padding:12px 40px;font-size:15px" (click)="save()" [disabled]="loading">
+      <span class="spinner" *ngIf="loading"></span>
+      {{ loading ? 'Salvando...' : 'Salvar Pré-Daily' }}
+    </button>
+  </div>
+
+  <div class="app-toast app-toast-success" *ngIf="saveSuccess">
+    {{ successMessage }}
+  </div>
+
+  <div class="modal-overlay" *ngIf="showClearModal" (click)="closeClearModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-title">
+        Limpar Pré-Daily
+        <button class="modal-close" type="button" (click)="closeClearModal()">×</button>
+      </div>
+      <div style="font-size:14px;color:var(--text);margin-bottom:18px">
+        Deseja realmente apagar toda a pre-daily registrada?
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button class="btn btn-secondary" type="button" (click)="closeClearModal()" [disabled]="clearLoading">Cancelar</button>
+        <button class="btn btn-danger" type="button" (click)="clearPreDaily()" [disabled]="clearLoading">
+          <span class="spinner" *ngIf="clearLoading"></span>
+          {{ clearLoading ? 'Limpando...' : 'Confirmar' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

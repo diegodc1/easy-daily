@@ -7,6 +7,8 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/login/login.component').then(m => m.LoginComponent) },
   { path: 'daily', canActivate: [authGuard],
     loadComponent: () => import('./pages/daily-form/daily-form.component').then(m => m.DailyFormComponent) },
+  { path: 'pre-daily', canActivate: [authGuard],
+    loadComponent: () => import('./pages/pre-daily/pre-daily.component').then(m => m.PreDailyComponent) },
   { path: 'history', canActivate: [authGuard],
     loadComponent: () => import('./pages/history/history.component').then(m => m.HistoryComponent) },
   { path: 'dashboard', canActivate: [authGuard, adminGuard],

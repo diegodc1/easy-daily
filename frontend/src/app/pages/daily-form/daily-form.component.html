@@ -11,16 +11,18 @@
               #replicateBtn
               type="button"
               (click)="openReplicateModal()"
-              [disabled]="loading || isEditLocked"
-              (mouseenter)="showReplicatePopover(replicateTip, replicateBtn)"
-              (mouseleave)="hideReplicatePopover(replicateTip)"
-              (focus)="showReplicatePopover(replicateTip, replicateBtn)"
-              (blur)="hideReplicatePopover(replicateTip)">
+              [disabled]="loading || isEditLocked">
         <span class="material-symbols-outlined">content_paste_go</span>
       </button>
-      <div #replicateTip popover style="padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface2);color:var(--text);font-size:12px;min-width:280px;max-width:320px">
-        Replicar daily do dia anterior
-      </div>
+
+      <button class="btn btn-secondary btn-sm"
+              #pullPreBtn
+              type="button"
+              (click)="openPullPreDailyModal()"
+              [disabled]="loading || isEditLocked || pullPreDailyLoading">
+        <span class="spinner" *ngIf="pullPreDailyLoading"></span>
+        <span class="material-symbols-outlined" *ngIf="!pullPreDailyLoading">move_to_inbox</span>
+      </button>
     </div>
   </div>
 
@@ -291,6 +293,25 @@
         <button class="btn btn-primary" type="button" (click)="confirmReplicatePreviousDay()" [disabled]="replicateLoading">
           <span class="spinner" *ngIf="replicateLoading"></span>
           {{ replicateLoading ? 'Replicando...' : 'Confirmar' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" *ngIf="showPullPreDailyModal" (click)="closePullPreDailyModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-title">
+        Carregar Pre-Daily
+        <button class="modal-close" type="button" (click)="closePullPreDailyModal()">×</button>
+      </div>
+      <div style="font-size:14px;color:var(--text);margin-bottom:18px">
+        Deseja realmente carregar a pre-daily?
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button class="btn btn-secondary" type="button" (click)="closePullPreDailyModal()" [disabled]="pullPreDailyLoading">Cancelar</button>
+        <button class="btn btn-primary" type="button" (click)="confirmPullPreDaily()" [disabled]="pullPreDailyLoading">
+          <span class="spinner" *ngIf="pullPreDailyLoading"></span>
+          {{ pullPreDailyLoading ? 'Carregando...' : 'Confirmar' }}
         </button>
       </div>
     </div>

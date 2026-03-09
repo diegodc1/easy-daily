@@ -104,3 +104,17 @@ export interface LoginResponse { token: string; username: string; fullName: stri
 export interface UserRequest   { username: string; password: string; fullName: string; email: string; bitrixId?: string; role: string; }
 export interface ProjectRequest { name: string; color: string; sortOrder: number; }
 export interface UserProjectPreferences { projectIds: number[]; }
+
+export interface PreDailyTask {
+  id?: number;
+  projectName: string;
+  description: string;
+}
+
+export interface PreDaily {
+  id?: number;
+  dailyDate: string;
+  tasks: PreDailyTask[];
+  createdAt?: string;
+  updatedAt?: string;
+}

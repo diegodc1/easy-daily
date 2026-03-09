@@ -39,6 +39,47 @@ public class DailyController {
         return ResponseEntity.ok(dailyService.getMyHistory(user));
     }
 
+    @PostMapping("/pre-daily")
+    public ResponseEntity<PreDailyResponse> savePreDaily(
+            @AuthenticationPrincipal User user,
+            @Valid @RequestBody PreDailyRequest req) {
+        return ResponseEntity.ok(dailyService.saveOrUpdatePreDaily(user, req));
+    }
+
+    @GetMapping("/pre-daily")
+    public ResponseEntity<PreDailyResponse> getPreDaily(
+            @AuthenticationPrincipal User user) {
+        return dailyService.getPreDailyByUser(user)
+            .map(ResponseEntity::ok)
+            .orElse(ResponseEntity.noContent().build());
+    }
+
+    @GetMapping("/pre-daily/date/{date}")
+    public ResponseEntity<PreDailyResponse> getPreDailyByDate(
+            @AuthenticationPrincipal User user,
+            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        return dailyService.getPreDailyByUser(user)
+            .map(ResponseEntity::ok)
+            .orElse(ResponseEntity.noContent().build());
+    }
+
+    @DeleteMapping("/pre-daily")
+    public ResponseEntity<Void> deletePreDaily(
+            @AuthenticationPrincipal User user) {
+        return dailyService.deletePreDailyByUser(user)
+            ? ResponseEntity.noContent().build()
+            : ResponseEntity.notFound().build();
+    }
+
+    @DeleteMapping("/pre-daily/date/{date}")
+    public ResponseEntity<Void> deletePreDailyByDate(
+            @AuthenticationPrincipal User user,
+            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        return dailyService.deletePreDailyByUser(user)
+            ? ResponseEntity.noContent().build()
+            : ResponseEntity.notFound().build();
+    }
+
     @PostMapping("/edit-requests")
     public ResponseEntity<DailyEditRequestResponse> requestEditPermission(
             @AuthenticationPrincipal User user,
