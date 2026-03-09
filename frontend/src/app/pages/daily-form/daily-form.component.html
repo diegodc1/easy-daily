@@ -7,6 +7,20 @@
     <div style="display:flex;align-items:center;gap:12px">
       <label class="form-label" style="margin:0;white-space:nowrap">Data:</label>
       <input type="date" class="form-control" style="width:auto" [(ngModel)]="selectedDate" (change)="onDateChange()">
+      <button class="btn btn-secondary btn-sm"
+              #replicateBtn
+              type="button"
+              (click)="openReplicateModal()"
+              [disabled]="loading || isEditLocked"
+              (mouseenter)="showReplicatePopover(replicateTip, replicateBtn)"
+              (mouseleave)="hideReplicatePopover(replicateTip)"
+              (focus)="showReplicatePopover(replicateTip, replicateBtn)"
+              (blur)="hideReplicatePopover(replicateTip)">
+        <span class="material-symbols-outlined">content_paste_go</span>
+      </button>
+      <div #replicateTip popover style="padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface2);color:var(--text);font-size:12px;min-width:280px;max-width:320px">
+        Replicar daily do dia anterior
+      </div>
     </div>
   </div>
 
@@ -261,5 +275,24 @@
 
   <div class="app-toast app-toast-success" *ngIf="saveSuccess">
     Daily salva com sucesso.
+  </div>
+
+  <div class="modal-overlay" *ngIf="showReplicateModal" (click)="closeReplicateModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-title">
+        Replicar Daily
+        <button class="modal-close" type="button" (click)="closeReplicateModal()">×</button>
+      </div>
+      <div style="font-size:14px;color:var(--text);margin-bottom:18px">
+        Deseja realmente replicar a daily do dia anterior para a data selecionada?
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button class="btn btn-secondary" type="button" (click)="closeReplicateModal()" [disabled]="replicateLoading">Cancelar</button>
+        <button class="btn btn-primary" type="button" (click)="confirmReplicatePreviousDay()" [disabled]="replicateLoading">
+          <span class="spinner" *ngIf="replicateLoading"></span>
+          {{ replicateLoading ? 'Replicando...' : 'Confirmar' }}
+        </button>
+      </div>
+    </div>
   </div>
 </div>

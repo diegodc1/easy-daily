@@ -45,6 +45,8 @@ export class DailyFormComponent implements OnInit {
   requestSuccess = '';
   protocolSyncLoading = false;
   protocolSyncMessage = '';
+  showReplicateModal = false;
+  replicateLoading = false;
 
   readonly protocolTypes = PROTOCOL_TYPES;
   readonly protocolColors = PROTOCOL_COLORS;
@@ -120,23 +122,56 @@ export class DailyFormComponent implements OnInit {
         this.tryLoadTodayProtocols();
         return;
       }
-      this.isExistingDaily = true;
-      this.canEditCurrentDaily = d.canEdit ?? false;
-      this.editRequestStatus = d.editRequestStatus ?? null;
-
-      this.form = {
-        ...d,
-        projectTimes: this.projects.map(p => d.projectTimes?.find(x => x.projectName === p.name) ?? { projectName: p.name, percentSpent: 0 }),
-        tasks: d.tasks ?? [],
-      };
-      this.syncTaskProjectsFromTasks();
-      this.todayTasks = this.parseDoingToday(d.doingToday);
-      this.syncTodayProjectsFromTasks();
+      this.applyDailyData(d);
     });
   }
 
   onDateChange() {
     this.loadForDate();
+  }
+
+  openReplicateModal() {
+    if (this.loading || this.isEditLocked) return;
+    this.saveError = '';
+    this.showReplicateModal = true;
+  }
+
+  closeReplicateModal() {
+    if (this.replicateLoading) return;
+    this.showReplicateModal = false;
+  }
+
+  confirmReplicatePreviousDay() {
+    if (this.replicateLoading) return;
+    this.replicateLoading = true;
+    this.saveError = '';
+
+    const previousDate = this.getPreviousDate(this.selectedDate);
+    this.svc.getByDate(previousDate).pipe(catchError(() => of(null))).subscribe(prev => {
+      this.replicateLoading = false;
+      this.showReplicateModal = false;
+      if (!prev) {
+        this.saveError = `Nao existe daily em ${this.formatDatePtBr(previousDate)} para replicar.`;
+        return;
+      }
+
+      // Replicate content only; keep current selected date and current edit-permission context
+      this.form = {
+        ...this.form,
+        doneYesterday: prev.doneYesterday ?? '',
+        doingToday: prev.doingToday ?? '',
+        blockers: prev.blockers ?? '',
+        hasBlocker: !!prev.hasBlocker,
+        projectTimes: this.projects.map(p => prev.projectTimes?.find(x => x.projectName === p.name) ?? { projectName: p.name, percentSpent: 0 }),
+        tasks: (prev.tasks ?? []).map(t => ({ ...t })),
+      };
+      this.syncTaskProjectsFromTasks();
+      this.todayTasks = this.parseDoingToday(prev.doingToday);
+      this.syncTodayProjectsFromTasks();
+      this.ensureSelectedProjects();
+      this.saveSuccess = true;
+      setTimeout(() => (this.saveSuccess = false), 3500);
+    });
   }
 
   private tryLoadTodayProtocols() {
@@ -160,6 +195,16 @@ export class DailyFormComponent implements OnInit {
 
   private isTodaySelected(): boolean {
     return this.selectedDate === new Date().toISOString().slice(0, 10);
+  }
+
+  private getPreviousDate(dateStr: string): string {
+    const d = new Date(dateStr + 'T12:00:00');
+    d.setDate(d.getDate() - 1);
+    return d.toISOString().slice(0, 10);
+  }
+
+  private formatDatePtBr(dateStr: string): string {
+    return new Date(dateStr + 'T12:00:00').toLocaleDateString('pt-BR');
   }
 
   get isEditLocked(): boolean {
@@ -408,21 +453,25 @@ export class DailyFormComponent implements OnInit {
     ).subscribe(res => {
       this.loading = false;
       if (!res) return;
-
-      this.isExistingDaily = true;
-      this.canEditCurrentDaily = res.canEdit ?? false;
-      this.editRequestStatus = res.editRequestStatus ?? null;
-      this.form = {
-        ...res,
-        projectTimes: this.projects.map(p => res.projectTimes?.find(x => x.projectName === p.name) ?? { projectName: p.name, percentSpent: 0 }),
-        tasks: res.tasks ?? [],
-      };
-      this.syncTaskProjectsFromTasks();
-      this.todayTasks = this.parseDoingToday(res.doingToday);
-      this.syncTodayProjectsFromTasks();
+      this.applyDailyData(res);
       this.saveSuccess = true;
       setTimeout(() => (this.saveSuccess = false), 3500);
     });
+  }
+
+  private applyDailyData(d: Daily) {
+    this.isExistingDaily = true;
+    this.canEditCurrentDaily = d.canEdit ?? false;
+    this.editRequestStatus = d.editRequestStatus ?? null;
+    this.form = {
+      ...d,
+      projectTimes: this.projects.map(p => d.projectTimes?.find(x => x.projectName === p.name) ?? { projectName: p.name, percentSpent: 0 }),
+      tasks: d.tasks ?? [],
+    };
+    this.syncTaskProjectsFromTasks();
+    this.todayTasks = this.parseDoingToday(d.doingToday);
+    this.syncTodayProjectsFromTasks();
+    this.ensureSelectedProjects();
   }
 
   barWidth(p: ProjectTime): string {
@@ -435,5 +484,22 @@ export class DailyFormComponent implements OnInit {
 
   protocolColor(type: string): string {
     return (PROTOCOL_COLORS as any)[type] ?? '#888';
+  }
+
+  showReplicatePopover(el: HTMLElement, anchor: HTMLElement) {
+    try {
+      const rect = anchor.getBoundingClientRect();
+      el.style.position = 'fixed';
+      el.style.left = `${rect.left + rect.width / 2}px`;
+      el.style.top = `${Math.max(8, rect.top - -80)}px`;
+      el.style.transform = 'translate(-50%, -100%)';
+      (el as any).showPopover?.();
+    } catch {}
+  }
+
+  hideReplicatePopover(el: HTMLElement) {
+    try {
+      (el as any).hidePopover?.();
+    } catch {}
   }
 }
