@@ -64,6 +64,22 @@ public class DailyService {
                 daily.getProjectTimes().add(pt);
             }
         }
+        daily.getTasks().clear();
+        if (req.getTasks() != null) {
+            for (TaskRequest tr : req.getTasks()) {
+                DailyTask task = new DailyTask();
+                task.setDaily(daily);
+                task.setProjectName(tr.getProjectName());
+                task.setDescription(tr.getDescription());
+                task.setHoursSpent(tr.getHoursSpent() != null ? tr.getHoursSpent() : 0.0);
+                daily.getTasks().add(task);
+            }
+        }
+        if (daily.getTasks() != null && !daily.getTasks().isEmpty()) {
+            daily.setDoneYesterday(formatTasksAsDoneYesterday(daily.getTasks()));
+        } else {
+            daily.setDoneYesterday(req.getDoneYesterday());
+        }
         return toResponse(dailyRepository.save(daily));
     }
 
@@ -130,8 +146,11 @@ public class DailyService {
                     .mapToDouble(Double::doubleValue)
                     .sum();
 
+                String doneYesterday = (d.getTasks() != null && !d.getTasks().isEmpty())
+                    ? formatTasksAsDoneYesterday(d.getTasks())
+                    : d.getDoneYesterday();
                 p.printRecord(d.getDailyDate(), d.getUser().getFullName(),
-                    d.getDoneYesterday(), d.getDoingToday(), d.getBlockers(),
+                    doneYesterday, d.getDoingToday(), d.getBlockers(),
                     d.isHasBlocker() ? "Sim" : "Nao",
                     d.getProtocolFA(), d.getProtocolIMP(), d.getProtocolDE(),
                     d.getProtocolDI(), d.getProtocolCO(), d.totalProtocols(),
@@ -218,7 +237,10 @@ public class DailyService {
     public DailyResponse toResponse(Daily d) {
         DailyResponse r = new DailyResponse();
         r.setId(d.getId()); r.setDailyDate(d.getDailyDate());
-        r.setDoneYesterday(d.getDoneYesterday()); r.setDoingToday(d.getDoingToday());
+        String doneYesterday = (d.getTasks() != null && !d.getTasks().isEmpty())
+            ? formatTasksAsDoneYesterday(d.getTasks())
+            : d.getDoneYesterday();
+        r.setDoneYesterday(doneYesterday); r.setDoingToday(d.getDoingToday());
         r.setBlockers(d.getBlockers()); r.setHasBlocker(d.isHasBlocker());
         r.setProtocolFA(d.getProtocolFA()); r.setProtocolIMP(d.getProtocolIMP());
         r.setProtocolDE(d.getProtocolDE()); r.setProtocolDI(d.getProtocolDI());
@@ -230,6 +252,16 @@ public class DailyService {
             ProjectTimeResponse ptr=new ProjectTimeResponse(); ptr.setId(pt.getId());
             ptr.setProjectName(pt.getProjectName()); ptr.setPercentSpent(pt.getPercentSpent()); return ptr;
         }).collect(Collectors.toList()));
+        if (d.getTasks() != null) {
+            r.setTasks(d.getTasks().stream().map(t -> {
+                TaskResponse task = new TaskResponse();
+                task.setId(t.getId());
+                task.setProjectName(t.getProjectName());
+                task.setDescription(t.getDescription());
+                task.setHoursSpent(t.getHoursSpent());
+                return task;
+            }).collect(Collectors.toList()));
+        }
         r.setEditRequestStatus(null);
         r.setCanEdit(true);
         return r;
@@ -322,5 +354,19 @@ public class DailyService {
         response.setCanEdit(false);
         response.setEditRequestStatus(null);
     }
-}
 
+    private String formatTasksAsDoneYesterday(List<DailyTask> tasks) {
+        return tasks.stream()
+            .filter(t -> t.getProjectName() != null && t.getDescription() != null)
+            .map(t -> "- [" + t.getProjectName() + "] " + t.getDescription() + " (" + formatHours(t.getHoursSpent()) + ")")
+            .collect(Collectors.joining("\n"));
+    }
+
+    private String formatHours(Double hours) {
+        double safe = hours != null ? Math.max(hours, 0.0) : 0.0;
+        int totalMinutes = (int) Math.round(safe * 60.0);
+        int hh = totalMinutes / 60;
+        int mm = totalMinutes % 60;
+        return String.format("%02d:%02d", hh, mm);
+    }
+}

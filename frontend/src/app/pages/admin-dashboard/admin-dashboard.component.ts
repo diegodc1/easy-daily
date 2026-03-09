@@ -21,7 +21,7 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit {
 
   // Default: yesterday only
   private yesterday = (() => {
-    const d = new Date(); d.setDate(d.getDate() - 1); return d.toISOString().slice(0, 10);
+    const d = new Date(); d.setDate(d.getDate()); return d.toISOString().slice(0, 10);
   })();
 
   filter = { start: this.yesterday, end: this.yesterday };

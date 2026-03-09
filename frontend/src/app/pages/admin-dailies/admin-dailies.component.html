@@ -181,7 +181,13 @@
 
           <div class="daily-section">
             <div class="daily-section-title">Feito ontem</div>
-            <div class="daily-section-text">{{ d.doneYesterday || '-' }}</div>
+            <div class="daily-section-text" *ngIf="!d.tasks?.length">{{ d.doneYesterday || '-' }}</div>
+            <div *ngIf="d.tasks?.length">
+              <div *ngFor="let t of d.tasks" class="project-pill" style="margin-bottom:6px">
+                <span class="pill-project">{{ t.projectName }}</span>
+                <span class="daily-section-text">{{ t.description }}</span>
+              </div>
+            </div>
           </div>
           <div class="daily-section">
             <div class="daily-section-title">Hoje</div>
@@ -192,12 +198,16 @@
             <div class="daily-section-text">{{ d.blockers }}</div>
           </div>
 
-          <div class="project-pills" *ngIf="d.projectTimes?.length">
-            <div *ngFor="let pt of d.projectTimes" class="project-pill">
-              <span class="pill-project">{{ pt.projectName }}</span>
-              <span class="pill-pct">{{ pt.percentSpent }}%</span>
+          <div class="daily-section" *ngIf="d.projectTimes?.length">
+            <div class="daily-section-title">Tempo gasto em cada projeto</div>
+            <div class="project-pills">
+              <div *ngFor="let pt of d.projectTimes" class="project-pill" [style.display]="pt.percentSpent > 0 ? 'flex' : 'none'">
+                <span class="pill-project">{{ pt.projectName }}</span>
+                <span class="pill-pct">{{ pt.percentSpent }}%</span>
+              </div>
             </div>
           </div>
+
         </div>
       </div>
     </div>

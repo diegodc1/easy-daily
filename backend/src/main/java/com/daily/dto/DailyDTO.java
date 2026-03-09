@@ -45,6 +45,11 @@ public class DailyDTO {
         @NotBlank private String projectName;
         @Min(0) @Max(100) private Double percentSpent = 0.0;
     }
+    @Data public static class TaskRequest {
+        @NotBlank private String projectName;
+        @NotBlank @Size(max = 2000) private String description;
+        @Min(0) @Max(24) private Double hoursSpent = 0.0;
+    }
     @Data public static class DailyRequest {
         @NotNull        private LocalDate dailyDate;
         private String  doneYesterday;
@@ -57,6 +62,7 @@ public class DailyDTO {
         @Min(0) private Integer protocolDI  = 0;
         @Min(0) private Integer protocolCO  = 0;
         private List<ProjectTimeRequest> projectTimes;
+        private List<TaskRequest> tasks;
     }
     @Data public static class ProjectTimeResponse {
         private Long id;
@@ -72,9 +78,16 @@ public class DailyDTO {
         private Integer   totalProtocols;
         private UserResponse user;
         private List<ProjectTimeResponse> projectTimes;
+        private List<TaskResponse> tasks;
         private String createdAt, updatedAt;
         private boolean canEdit = true;
         private DailyEditRequest.Status editRequestStatus;
+    }
+    @Data public static class TaskResponse {
+        private Long id;
+        private String projectName;
+        private String description;
+        private Double hoursSpent;
     }
     @Data public static class DailyByDateResponse {
         private LocalDate date;
