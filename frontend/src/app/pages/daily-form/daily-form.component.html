@@ -313,7 +313,7 @@
   </div>
 
   <div class="daily-save-row" style="margin-top:24px;display:flex;justify-content:flex-end">
-    <button class="btn btn-primary daily-save-btn" style="padding:12px 40px;font-size:15px" (click)="save()" [disabled]="loading || isEditLocked">
+    <button class="btn btn-primary daily-save-btn" style="padding:12px 40px;font-size:15px;display: flex;justify-content: center;" (click)="save()" [disabled]="loading || isEditLocked">
       <span class="spinner" *ngIf="loading"></span>
       {{ loading ? 'Salvando...' : 'Salvar Daily' }}
     </button>
