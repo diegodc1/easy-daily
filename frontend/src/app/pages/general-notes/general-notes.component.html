@@ -11,7 +11,7 @@
 
   <div class="card" style="margin-bottom:20px">
     <div class="card-title" style="margin-bottom:16px">Nova anotacao</div>
-    <div style="display:grid;grid-template-columns:220px 180px 1fr auto;gap:10px;align-items:end">
+    <div style="display:grid;grid-template-columns:220px 180px 220px 1fr auto;gap:10px;align-items:end">
       <div>
         <label class="form-label">Projeto</label>
         <select class="form-control" [(ngModel)]="newNote.projectName" [ngModelOptions]="{standalone: true}">
@@ -22,6 +22,10 @@
       <div>
         <label class="form-label">Protocolo</label>
         <input class="form-control" [(ngModel)]="newNote.protocol" [ngModelOptions]="{standalone: true}" placeholder="Opcional">
+      </div>
+      <div>
+        <label class="form-label">Titulo</label>
+        <input class="form-control" [(ngModel)]="newNote.title" [ngModelOptions]="{standalone: true}" placeholder="Opcional">
       </div>
       <div>
         <label class="form-label">Texto *</label>
@@ -59,11 +63,21 @@
   <div class="postit-grid" *ngIf="filteredNotes.length > 0">
     <div class="postit-card" *ngFor="let note of filteredNotes" [class.postit-finished]="note.finished">
       <ng-container *ngIf="editingId !== note.id; else editMode">
-        <div class="postit-top">
-          <span class="postit-project">{{ note.projectName || 'Geral' }}</span>
-          <span class="postit-protocol" *ngIf="note.protocol">{{ note.protocol }}</span>
-        </div>
-        <div class="postit-text">{{ note.noteText }}</div>
+          <div class="postit-top">
+              <div style="width: 100%; display:flex;justify-content: space-between">
+                  <span class="postit-project">{{ note.projectName || 'Geral' }}</span>
+              </div>
+              <span class="postit-protocol" *ngIf="note.protocol">{{ note.protocol }}</span>
+          </div>
+          <span class="postit-title" *ngIf="note.title" style="font-weight:700;font-size:14px;margin-bottom:2px">{{ note.title }}</span>
+          <div class="postit-text" [class.postit-text-truncated]="isNoteTextLarge(note)">
+            {{ isNoteTextLarge(note) ? (note.noteText.substring(0, 200) + '...') : note.noteText }}
+          </div>
+          <div *ngIf="isNoteTextLarge(note)" style="margin-top:8px">
+            <button class="btn btn-link btn-view-more" type="button" (click)="openNoteModal(note)" title="Ver anotacao completa">
+              Ver mais →
+            </button>
+          </div>
         <div class="postit-footer">
           <span>{{ formatDate(note.updatedAt || note.createdAt) }}</span>
           <div style="display:flex;gap:3px; align-items: end">
@@ -87,6 +101,7 @@
             <option *ngFor="let p of projects" [value]="p.name">{{ p.name }}</option>
           </select>
           <input class="form-control" [(ngModel)]="editDraft.protocol" [ngModelOptions]="{standalone: true}" placeholder="Protocolo (opcional)">
+          <input class="form-control" [(ngModel)]="editDraft.title" [ngModelOptions]="{standalone: true}" placeholder="Titulo (opcional)">
           <textarea class="form-control" rows="5" [(ngModel)]="editDraft.noteText" [ngModelOptions]="{standalone: true}" placeholder="Texto da anotacao"></textarea>
           <div style="display:flex;gap:8px;justify-content:flex-end">
             <button class="btn btn-secondary btn-sm" type="button" (click)="cancelEdit()" [disabled]="editSaving">Cancelar</button>
@@ -115,6 +130,36 @@
           <span class="spinner" *ngIf="deleteLoading"></span>
           {{ deleteLoading ? 'Excluindo...' : 'Confirmar' }}
         </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" *ngIf="showNoteModal" (click)="closeNoteModal()">
+    <div class="modal modal-note" (click)="$event.stopPropagation()">
+      <div class="modal-title">
+        Anotacao Completa
+        <button class="modal-close" type="button" (click)="closeNoteModal()">×</button>
+      </div>
+      <div *ngIf="selectedNote" style="display:grid;gap:12px">
+        <div>
+          <label class="form-label" style="color:var(--text-muted);font-size:12px;font-weight:600">PROJETO</label>
+          <div style="font-size:14px;font-weight:500">{{ selectedNote.projectName || 'Geral' }}</div>
+        </div>
+        <div *ngIf="selectedNote.protocol">
+          <label class="form-label" style="color:var(--text-muted);font-size:12px;font-weight:600">PROTOCOLO</label>
+          <div style="font-size:14px;font-weight:500">{{ selectedNote.protocol }}</div>
+        </div>
+        <div *ngIf="selectedNote.title">
+          <label class="form-label" style="color:var(--text-muted);font-size:12px;font-weight:600">TITULO</label>
+          <div style="font-size:14px;font-weight:500">{{ selectedNote.title }}</div>
+        </div>
+        <div>
+          <label class="form-label" style="color:var(--text-muted);font-size:12px;font-weight:600">ANOTACAO</label>
+          <div style="font-size:14px;line-height:1.6;white-space:pre-wrap;word-wrap:break-word;word-break:break-word;overflow-wrap:break-word">{{ selectedNote.noteText }}</div>
+        </div>
+        <div style="border-top:1px solid var(--border);padding-top:12px;color:var(--text-muted);font-size:12px">
+          Atualizado em {{ formatDate(selectedNote.updatedAt || selectedNote.createdAt) }}
+        </div>
       </div>
     </div>
   </div>

@@ -152,6 +152,7 @@ public class DailyService {
         note.setUser(user);
         note.setProjectName(normalizeProjectName(req.getProjectName()));
         note.setProtocol(cleanProtocol(req.getProtocol()));
+        note.setTitle(cleanTitle(req.getTitle()));
         note.setNoteText(req.getNoteText().trim());
         return toGeneralNoteResponse(generalNoteRepository.save(note));
     }
@@ -162,6 +163,7 @@ public class DailyService {
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Anotacao nao encontrada."));
         note.setProjectName(normalizeProjectName(req.getProjectName()));
         note.setProtocol(cleanProtocol(req.getProtocol()));
+        note.setTitle(cleanTitle(req.getTitle()));
         note.setNoteText(req.getNoteText().trim());
         return toGeneralNoteResponse(generalNoteRepository.save(note));
     }
@@ -545,6 +547,7 @@ public class DailyService {
         response.setId(note.getId());
         response.setProjectName(note.getProjectName());
         response.setProtocol(note.getProtocol());
+        response.setTitle(note.getTitle());
         response.setNoteText(note.getNoteText());
         response.setFinished(note.isFinished());
         response.setCreatedAt(note.getCreatedAt() != null ? note.getCreatedAt().toString() : null);
@@ -555,6 +558,12 @@ public class DailyService {
     private String cleanProtocol(String protocol) {
         if (protocol == null) return null;
         String trimmed = protocol.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private String cleanTitle(String title) {
+        if (title == null) return null;
+        String trimmed = title.trim();
         return trimmed.isEmpty() ? null : trimmed;
     }
 

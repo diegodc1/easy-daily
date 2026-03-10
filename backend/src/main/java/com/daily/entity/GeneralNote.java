@@ -28,6 +28,9 @@ public class GeneralNote {
     @Column(name = "protocol", length = 100)
     private String protocol;
 
+    @Column(name = "title", length = 200)
+    private String title;
+
     @Column(name = "note_text", nullable = false, columnDefinition = "TEXT")
     private String noteText;
 

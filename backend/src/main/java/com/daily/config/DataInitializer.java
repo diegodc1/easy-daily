@@ -58,6 +58,7 @@ public class DataInitializer implements CommandLineRunner {
                     user_id BIGINT NOT NULL,
                     project_name VARCHAR(100) NOT NULL,
                     protocol VARCHAR(100),
+                    title VARCHAR(200),
                     note_text TEXT NOT NULL,
                     finished BOOLEAN NOT NULL DEFAULT FALSE,
                     created_at TIMESTAMP(6) NOT NULL DEFAULT NOW(),
@@ -66,6 +67,7 @@ public class DataInitializer implements CommandLineRunner {
                 """);
 
             jdbcTemplate.execute("ALTER TABLE general_notes ADD COLUMN IF NOT EXISTS finished BOOLEAN NOT NULL DEFAULT FALSE");
+            jdbcTemplate.execute("ALTER TABLE general_notes ADD COLUMN IF NOT EXISTS title VARCHAR(200)");
 
             jdbcTemplate.execute("""
                 DO $$

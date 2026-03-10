@@ -24,15 +24,19 @@ export class GeneralNotesComponent implements OnInit {
   searchText = '';
   showFinished = true;
 
-  newNote: GeneralNote = { projectName: '', protocol: '', noteText: '' };
+  newNote: GeneralNote = {projectName: '', protocol: '', title: '', noteText: ''};
   editingId: number | null = null;
-  editDraft: GeneralNote = { projectName: '', protocol: '', noteText: '' };
+  editDraft: GeneralNote = {projectName: '', protocol: '', title: '', noteText: ''};
   editSaving = false;
   showDeleteModal = false;
   deleteLoading = false;
   deleteTarget: GeneralNote | null = null;
 
-  constructor(private svc: DailyService) {}
+  showNoteModal = false;
+  selectedNote: GeneralNote | null = null;
+
+  constructor(private svc: DailyService) {
+  }
 
   ngOnInit(): void {
     this.svc.getActiveProjects().pipe(catchError(() => of([]))).subscribe(projects => {
@@ -48,7 +52,7 @@ export class GeneralNotesComponent implements OnInit {
       const byProject = this.filterProject === 'ALL' || note.projectName === this.filterProject;
       if (!byProject) return false;
       if (!term) return true;
-      const haystack = `${note.projectName} ${note.protocol ?? ''} ${note.noteText}`.toLowerCase();
+      const haystack = `${note.projectName} ${note.protocol ?? ''} ${note.title ?? ''} ${note.noteText}`.toLowerCase();
       return haystack.includes(term);
     });
   }
@@ -75,7 +79,7 @@ export class GeneralNotesComponent implements OnInit {
         return;
       }
       this.notes = [created, ...this.notes];
-      this.newNote = { projectName: '', protocol: '', noteText: '' };
+      this.newNote = {projectName: '', protocol: '', noteText: ''};
       this.saveSuccess = true;
       setTimeout(() => (this.saveSuccess = false), 3000);
     });
@@ -99,6 +103,7 @@ export class GeneralNotesComponent implements OnInit {
     this.editDraft = {
       projectName: note.projectName === 'Geral' ? '' : note.projectName,
       protocol: note.protocol ?? '',
+      title: note.title ?? '',
       noteText: note.noteText,
     };
     this.saveError = '';
@@ -107,7 +112,7 @@ export class GeneralNotesComponent implements OnInit {
   cancelEdit() {
     if (this.editSaving) return;
     this.editingId = null;
-    this.editDraft = { projectName: '', protocol: '', noteText: '' };
+    this.editDraft = {projectName: '', protocol: '', title: '', noteText: ''};
   }
 
   saveEdit(note: GeneralNote) {
@@ -148,14 +153,19 @@ export class GeneralNotesComponent implements OnInit {
 
     this.deleteLoading = true;
     this.saveError = '';
-    this.svc.deleteGeneralNote(note.id).pipe(catchError(() => of(null))).subscribe(res => {
+    this.svc.deleteGeneralNote(note.id).pipe(catchError(err => {
+      console.error('Delete error:', err);
+      return of('ERROR');
+    })).subscribe(res => {
       this.deleteLoading = false;
-      if (res === null) {
+      if (res === 'ERROR') {
         this.saveError = 'Nao foi possivel excluir a anotacao.';
         return;
       }
       this.notes = this.notes.filter(n => n.id !== note.id);
       this.closeDeleteModal();
+      this.saveSuccess = true;
+      setTimeout(() => (this.saveSuccess = false), 3000);
     });
   }
 
@@ -164,10 +174,16 @@ export class GeneralNotesComponent implements OnInit {
     return new Date(value).toLocaleString('pt-BR');
   }
 
-  private buildPayload(note: GeneralNote): { projectName: string; protocol?: string | null; noteText: string } | null {
+  private buildPayload(note: GeneralNote): {
+    projectName: string;
+    protocol?: string | null;
+    title?: string | null;
+    noteText: string
+  } | null {
     const projectName = (note.projectName ?? '').trim();
     const noteText = (note.noteText ?? '').trim();
     const protocol = (note.protocol ?? '').trim();
+    const title = (note.title ?? '').trim();
 
     if (!noteText) {
       this.saveError = 'Texto da anotacao e obrigatorio.';
@@ -178,6 +194,21 @@ export class GeneralNotesComponent implements OnInit {
       projectName: projectName || 'Geral',
       noteText,
       protocol: protocol || null,
+      title: title || null,
     };
+  }
+
+  isNoteTextLarge(note: GeneralNote): boolean {
+    return (note.noteText ?? '').length > 200;
+  }
+
+  openNoteModal(note: GeneralNote) {
+    this.selectedNote = note;
+    this.showNoteModal = true;
+  }
+
+  closeNoteModal() {
+    this.showNoteModal = false;
+    this.selectedNote = null;
   }
 }

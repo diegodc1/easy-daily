@@ -123,6 +123,7 @@ export interface GeneralNote {
   id?: number;
   projectName: string;
   protocol?: string | null;
+  title?: string | null;
   noteText: string;
   finished?: boolean;
   createdAt?: string;

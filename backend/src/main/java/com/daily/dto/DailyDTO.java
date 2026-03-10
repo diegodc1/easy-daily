@@ -168,6 +168,7 @@ public class DailyDTO {
     @Data public static class GeneralNoteRequest {
         @Size(max = 100) private String projectName;
         @Size(max = 100) private String protocol;
+        @Size(max = 200) private String title;
         @NotBlank @Size(max = 5000) private String noteText;
     }
 
@@ -175,6 +176,7 @@ public class DailyDTO {
         private Long id;
         private String projectName;
         private String protocol;
+        private String title;
         private String noteText;
         private boolean finished;
         private String createdAt;
