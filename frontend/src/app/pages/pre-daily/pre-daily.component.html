@@ -68,6 +68,26 @@
     {{ successMessage }}
   </div>
 
+  <div class="modal-overlay" *ngIf="showRemoveProjectModal" (click)="cancelRemoveProjectBlock()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-title">
+        Remover projeto
+        <button class="modal-close" type="button" (click)="cancelRemoveProjectBlock()">×</button>
+      </div>
+      <div style="font-size:14px;color:var(--text);margin-bottom:18px">
+        Tem certeza que deseja remover o projeto
+        <strong>{{ projectToRemove }}</strong>
+        e todas as tarefas associadas da pré-daily?
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button class="btn btn-secondary" type="button" (click)="cancelRemoveProjectBlock()">Cancelar</button>
+        <button class="btn btn-danger" type="button" (click)="confirmRemoveProjectBlock()">
+          Confirmar
+        </button>
+      </div>
+    </div>
+  </div>
+
   <div class="modal-overlay" *ngIf="showClearModal" (click)="closeClearModal()">
     <div class="modal" (click)="$event.stopPropagation()">
       <div class="modal-title">

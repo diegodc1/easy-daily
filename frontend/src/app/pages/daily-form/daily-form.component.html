@@ -268,6 +268,48 @@
     </div>
   </fieldset>
 
+  <!-- Modal remover projeto (ontem) -->
+  <div class="modal-overlay" *ngIf="showRemoveProjectModal" (click)="cancelRemoveProjectBlock()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-title">
+        Remover projeto
+        <button class="modal-close" type="button" (click)="cancelRemoveProjectBlock()">×</button>
+      </div>
+      <div style="font-size:14px;color:var(--text);margin-bottom:18px">
+        Tem certeza que deseja remover o projeto
+        <strong>{{ projectToRemove }}</strong>
+        e todas as tarefas associadas de ontem?
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button class="btn btn-secondary" type="button" (click)="cancelRemoveProjectBlock()">Cancelar</button>
+        <button class="btn btn-danger" type="button" (click)="confirmRemoveProjectBlock()">
+          Confirmar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal remover projeto (hoje) -->
+  <div class="modal-overlay" *ngIf="showRemoveTodayProjectModal" (click)="cancelRemoveTodayProjectBlock()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-title">
+        Remover projeto de hoje
+        <button class="modal-close" type="button" (click)="cancelRemoveTodayProjectBlock()">×</button>
+      </div>
+      <div style="font-size:14px;color:var(--text);margin-bottom:18px">
+        Tem certeza que deseja remover o projeto
+        <strong>{{ projectToRemove }}</strong>
+        e todas as tarefas planejadas para hoje?
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button class="btn btn-secondary" type="button" (click)="cancelRemoveTodayProjectBlock()">Cancelar</button>
+        <button class="btn btn-danger" type="button" (click)="confirmRemoveTodayProjectBlock()">
+          Confirmar
+        </button>
+      </div>
+    </div>
+  </div>
+
   <div style="margin-top:24px;display:flex;justify-content:flex-end">
     <button class="btn btn-primary" style="padding:12px 40px;font-size:15px" (click)="save()" [disabled]="loading || isEditLocked">
       <span class="spinner" *ngIf="loading"></span>

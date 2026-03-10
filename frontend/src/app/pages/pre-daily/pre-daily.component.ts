@@ -25,6 +25,8 @@ export class PreDailyComponent implements OnInit {
   successMessage = 'Pre-daily salva com sucesso.';
   saveError = '';
   showClearModal = false;
+  showRemoveProjectModal = false;
+  projectToRemove: string | null = null;
 
   constructor(private svc: DailyService) {}
 
@@ -59,8 +61,22 @@ export class PreDailyComponent implements OnInit {
   }
 
   removeProjectBlock(projectName: string) {
+    this.projectToRemove = projectName;
+    this.showRemoveProjectModal = true;
+  }
+
+  confirmRemoveProjectBlock() {
+    if (!this.projectToRemove) return;
+    const projectName = this.projectToRemove;
     this.projectBlocks = this.projectBlocks.filter(p => p !== projectName);
     this.form.tasks = (this.form.tasks ?? []).filter(t => t.projectName !== projectName);
+    this.projectToRemove = null;
+    this.showRemoveProjectModal = false;
+  }
+
+  cancelRemoveProjectBlock() {
+    this.projectToRemove = null;
+    this.showRemoveProjectModal = false;
   }
 
   getTasksByProject(projectName: string): PreDailyTask[] {

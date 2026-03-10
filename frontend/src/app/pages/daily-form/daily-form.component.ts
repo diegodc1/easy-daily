@@ -55,6 +55,9 @@ export class DailyFormComponent implements OnInit, AfterViewInit, OnDestroy {
   showPullPreDailyModal = false;
   replicateLoading = false;
   pullPreDailyLoading = false;
+  showRemoveProjectModal = false;
+  showRemoveTodayProjectModal = false;
+  projectToRemove: string | null = null;
   private tooltipInstances: Instance[] = [];
 
   readonly protocolTypes = PROTOCOL_TYPES;
@@ -330,9 +333,23 @@ export class DailyFormComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   removeProjectBlock(projectName: string) {
+    this.projectToRemove = projectName;
+    this.showRemoveProjectModal = true;
+  }
+
+  confirmRemoveProjectBlock() {
+    if (!this.projectToRemove) return;
+    const projectName = this.projectToRemove;
     this.taskProjects = this.taskProjects.filter(p => p !== projectName);
     this.form.tasks = (this.form.tasks ?? []).filter(t => t.projectName !== projectName);
     this.setProjectPercent(projectName, 0);
+    this.projectToRemove = null;
+    this.showRemoveProjectModal = false;
+  }
+
+  cancelRemoveProjectBlock() {
+    this.projectToRemove = null;
+    this.showRemoveProjectModal = false;
   }
 
   getTasksByProject(projectName: string): DailyTask[] {
@@ -369,8 +386,22 @@ export class DailyFormComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   removeTodayProjectBlock(projectName: string) {
+    this.projectToRemove = projectName;
+    this.showRemoveTodayProjectModal = true;
+  }
+
+  confirmRemoveTodayProjectBlock() {
+    if (!this.projectToRemove) return;
+    const projectName = this.projectToRemove;
     this.todayProjects = this.todayProjects.filter(p => p !== projectName);
     this.todayTasks = (this.todayTasks ?? []).filter(t => t.projectName !== projectName);
+    this.projectToRemove = null;
+    this.showRemoveTodayProjectModal = false;
+  }
+
+  cancelRemoveTodayProjectBlock() {
+    this.projectToRemove = null;
+    this.showRemoveTodayProjectModal = false;
   }
 
   getTodayTasksByProject(projectName: string): { projectName: string; description: string }[] {
