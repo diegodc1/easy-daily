@@ -12,6 +12,8 @@ import { AppProject, PreDaily, PreDailyTask } from '../../core/models/models';
   templateUrl: './pre-daily.component.html',
 })
 export class PreDailyComponent implements OnInit {
+  private readonly lastEventStorageKey = 'pre_daily_last_event';
+
   projects: AppProject[] = [];
   visibleProjectIds: number[] = [];
   selectedProject = '';
@@ -27,10 +29,13 @@ export class PreDailyComponent implements OnInit {
   showClearModal = false;
   showRemoveProjectModal = false;
   projectToRemove: string | null = null;
+  lastEventText = '';
 
   constructor(private svc: DailyService) {}
 
   ngOnInit() {
+    this.lastEventText = this.readStoredLastEventText();
+
     this.svc.getActiveProjects().pipe(catchError(() => of([]))).subscribe(p => {
       this.projects = p;
       this.svc.getDailyProjectPreferences().pipe(catchError(() => of({ projectIds: p.map(x => x.id) }))).subscribe(pref => {
@@ -116,6 +121,7 @@ export class PreDailyComponent implements OnInit {
       this.loading = false;
       if (!res) return;
       this.form = { ...res, tasks: res.tasks ?? [] };
+      this.applyUpdateEvent(res.updatedAt ?? res.createdAt);
       this.syncProjectBlocksFromTasks();
       this.ensureSelectedProject();
       this.successMessage = 'Pre-daily salva com sucesso.';
@@ -149,6 +155,7 @@ export class PreDailyComponent implements OnInit {
       this.showClearModal = false;
       this.form = { dailyDate: new Date().toISOString().slice(0, 10), tasks: [] };
       this.projectBlocks = [];
+      this.applyDeleteEvent(new Date().toISOString());
       this.ensureSelectedProject();
       this.successMessage = 'Pre-daily limpa com sucesso.';
       this.saveSuccess = true;
@@ -163,10 +170,67 @@ export class PreDailyComponent implements OnInit {
 
     this.svc.getPreDaily().pipe(catchError(() => of(null))).subscribe(d => {
       if (!d) return;
+      this.applyUpdateEvent(d.updatedAt ?? d.createdAt);
       this.form = { ...d, tasks: d.tasks ?? [] };
       this.syncProjectBlocksFromTasks();
       this.ensureSelectedProject();
     });
+  }
+
+  private applyUpdateEvent(isoDate?: string) {
+    if (!isoDate) return;
+    const current = this.readStoredLastEvent();
+    const next = { type: 'update' as const, at: isoDate };
+    if (!current || this.toMillis(next.at) >= this.toMillis(current.at)) {
+      this.storeLastEvent(next);
+      this.lastEventText = this.buildLastEventText(next);
+    }
+  }
+
+  private applyDeleteEvent(isoDate: string) {
+    const evt = { type: 'delete' as const, at: isoDate };
+    this.storeLastEvent(evt);
+    this.lastEventText = this.buildLastEventText(evt);
+  }
+
+  private buildLastEventText(event: { type: 'update' | 'delete'; at: string }): string {
+    const action = event.type === 'delete' ? 'Ultima exclusao' : 'Última atualização';
+    return `${action}: ${this.formatDateTime(event.at)}`;
+  }
+
+  private formatDateTime(value: string): string {
+    const parsed = value.includes('T') ? value : value.replace(' ', 'T');
+    const date = new Date(parsed);
+    if (Number.isNaN(date.getTime())) return '-';
+    return date.toLocaleString('pt-BR');
+  }
+
+  private readStoredLastEventText(): string {
+    const event = this.readStoredLastEvent();
+    return event ? this.buildLastEventText(event) : '';
+  }
+
+  private readStoredLastEvent(): { type: 'update' | 'delete'; at: string } | null {
+    try {
+      const raw = localStorage.getItem(this.lastEventStorageKey);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (!parsed?.type || !parsed?.at) return null;
+      if (parsed.type !== 'update' && parsed.type !== 'delete') return null;
+      return parsed;
+    } catch {
+      return null;
+    }
+  }
+
+  private storeLastEvent(event: { type: 'update' | 'delete'; at: string }) {
+    localStorage.setItem(this.lastEventStorageKey, JSON.stringify(event));
+  }
+
+  private toMillis(value: string): number {
+    const parsed = value.includes('T') ? value : value.replace(' ', 'T');
+    const time = new Date(parsed).getTime();
+    return Number.isNaN(time) ? 0 : time;
   }
 
   private syncProjectBlocksFromTasks() {
