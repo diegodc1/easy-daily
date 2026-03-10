@@ -1,8 +1,8 @@
-import { Injectable } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
 import { inject } from '@angular/core';
 import { HttpInterceptorFn } from '@angular/common/http';
 import { AuthService } from '../services/auth.service';
+import { catchError, throwError } from 'rxjs';
 
 export const authGuard: CanActivateFn = () => {
   const auth = inject(AuthService);
@@ -21,9 +21,19 @@ export const adminGuard: CanActivateFn = () => {
 };
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
-  const token = inject(AuthService).getToken();
+  const auth = inject(AuthService);
+  const token = auth.getToken();
   if (token) {
     req = req.clone({ setHeaders: { Authorization: `Bearer ${token}` } });
   }
-  return next(req);
+  return next(req).pipe(
+    catchError((error) => {
+      const isUnauthorized = error?.status === 401;
+      const isLoginRequest = req.url.includes('/auth/login');
+      if (isUnauthorized && !isLoginRequest) {
+        auth.logout();
+      }
+      return throwError(() => error);
+    })
+  );
 };

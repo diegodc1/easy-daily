@@ -12,7 +12,17 @@ export class AuthService {
 
   constructor(private http: HttpClient, private router: Router) {
     const stored = localStorage.getItem('daily_user');
-    if (stored) this.user$.next(JSON.parse(stored));
+    if (!stored) return;
+    try {
+      const parsed = JSON.parse(stored) as LoginResponse;
+      if (this.isTokenExpired(localStorage.getItem('daily_token'))) {
+        this.clearSession();
+        return;
+      }
+      this.user$.next(parsed);
+    } catch {
+      this.clearSession();
+    }
   }
 
   login(req: LoginRequest): Observable<LoginResponse> {
@@ -26,14 +36,42 @@ export class AuthService {
   }
 
   logout() {
-    localStorage.removeItem('daily_user');
-    localStorage.removeItem('daily_token');
-    this.user$.next(null);
+    this.clearSession();
     this.router.navigate(['/login']);
   }
 
-  getToken():    string | null  { return localStorage.getItem('daily_token'); }
+  getToken(): string | null {
+    const token = localStorage.getItem('daily_token');
+    if (this.isTokenExpired(token)) {
+      this.clearSession();
+      return null;
+    }
+    return token;
+  }
+
   getUser():     LoginResponse | null { return this.user$.value; }
   isAdmin():     boolean { return this.user$.value?.role === 'ADMIN'; }
-  isLoggedIn():  boolean { return !!this.user$.value; }
+  isLoggedIn():  boolean { return !!this.user$.value && !!this.getToken(); }
+
+  private clearSession() {
+    localStorage.removeItem('daily_user');
+    localStorage.removeItem('daily_token');
+    this.user$.next(null);
+  }
+
+  private isTokenExpired(token: string | null): boolean {
+    if (!token) return true;
+    try {
+      const payload = token.split('.')[1];
+      if (!payload) return true;
+      const normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
+      const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=');
+      const decoded = JSON.parse(atob(padded));
+      const exp = typeof decoded?.exp === 'number' ? decoded.exp : null;
+      if (!exp) return true;
+      return Date.now() >= exp * 1000;
+    } catch {
+      return true;
+    }
+  }
 }
