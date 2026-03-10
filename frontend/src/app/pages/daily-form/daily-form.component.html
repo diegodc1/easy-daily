@@ -4,10 +4,10 @@
       <div class="page-title">Minha Daily</div>
       <div class="page-subtitle">{{ todayStr }}</div>
     </div>
-    <div style="display:flex;align-items:center;gap:12px">
-      <label class="form-label" style="margin:0;white-space:nowrap">Data:</label>
-      <input type="date" class="form-control" style="width:auto" [(ngModel)]="selectedDate" (change)="onDateChange()">
-      <button class="btn btn-secondary btn-sm"
+    <div class="daily-toolbar" style="display:flex;align-items:center;gap:12px">
+      <label class="form-label daily-toolbar-label" style="margin:0;white-space:nowrap">Data:</label>
+      <input type="date" class="form-control daily-toolbar-date" style="width:auto" [(ngModel)]="selectedDate" (change)="onDateChange()">
+      <button class="btn btn-secondary btn-sm daily-toolbar-icon-btn"
               #replicateBtn
               type="button"
               (click)="openReplicateModal()"
@@ -15,7 +15,7 @@
         <span class="material-symbols-outlined">content_paste_go</span>
       </button>
 
-      <button class="btn btn-secondary btn-sm"
+      <button class="btn btn-secondary btn-sm daily-toolbar-icon-btn"
               #pullPreBtn
               type="button"
               (click)="openPullPreDailyModal()"
@@ -68,7 +68,7 @@
                 <option value="" disabled>Selecione um projeto</option>
                 <option *ngFor="let p of visibleProjects" [value]="p.name">{{ p.name }}</option>
               </select>
-              <button class="btn btn-secondary btn-sm" style="height: 2.5rem" type="button" (click)="addProjectBlock()" [disabled]="!selectedTaskProject"><span class="material-symbols-outlined">add_circle</span></button>
+              <button class="btn btn-secondary btn-sm daily-project-add-btn" style="height: 2.5rem" type="button" (click)="addProjectBlock()" [disabled]="!selectedTaskProject"><span class="material-symbols-outlined">add_circle</span></button>
             </div>
         </div>
 
@@ -93,8 +93,8 @@
                        placeholder="0">
                 <span class="pct-symbol">%</span>
               </div>
-              <button class="btn btn-secondary btn-sm" type="button" (click)="addTask(projectName)">+ Tarefa</button>
-              <button class="btn btn-danger btn-sm" type="button" (click)="removeProjectBlock(projectName)">Remover projeto</button>
+              <button class="btn btn-secondary btn-sm daily-project-action-btn" type="button" (click)="addTask(projectName)">+ Tarefa</button>
+              <button class="btn btn-danger btn-sm daily-project-action-btn" type="button" (click)="removeProjectBlock(projectName)">Remover projeto</button>
             </div>
           </div>
 
@@ -110,7 +110,7 @@
                    [ngModelOptions]="{standalone: true}"
                    placeholder="Descricao da tarefa">
 
-            <button class="btn btn-danger btn-sm" type="button" (click)="removeTask(task)">-</button>
+            <button class="btn btn-danger btn-sm daily-task-remove-btn" type="button" (click)="removeTask(task)">-</button>
           </div>
 
           <div class="info-box" *ngIf="getTasksByProject(projectName).length === 0">Nenhuma tarefa neste projeto.</div>
@@ -129,7 +129,7 @@
                 <option value="" disabled>Selecione um projeto</option>
                 <option *ngFor="let p of visibleProjects" [value]="p.name">{{ p.name }}</option>
               </select>
-              <button class="btn btn-secondary btn-sm" style="height:2.5rem" type="button" (click)="addTodayProjectBlock()" [disabled]="!selectedTodayProject">
+              <button class="btn btn-secondary btn-sm daily-project-add-btn" style="height:2.5rem" type="button" (click)="addTodayProjectBlock()" [disabled]="!selectedTodayProject">
                 <span class="material-symbols-outlined">add_circle</span>
               </button>
             </div>
@@ -143,8 +143,8 @@
                 <div class="card-title">{{ projectName }}</div>
               </div>
               <div class="daily-project-actions" style="display:flex;gap:8px">
-                <button class="btn btn-secondary btn-sm" type="button" (click)="addTodayTask(projectName)">+ Tarefa</button>
-                <button class="btn btn-danger btn-sm" type="button" (click)="removeTodayProjectBlock(projectName)">Remover projeto</button>
+                <button class="btn btn-secondary btn-sm daily-project-action-btn" type="button" (click)="addTodayTask(projectName)">+ Tarefa</button>
+                <button class="btn btn-danger btn-sm daily-project-action-btn" type="button" (click)="removeTodayProjectBlock(projectName)">Remover projeto</button>
               </div>
             </div>
 
@@ -159,7 +159,7 @@
                      (ngModelChange)="task.description = $event"
                      [ngModelOptions]="{standalone: true}"
                      placeholder="Descricao da tarefa">
-              <button class="btn btn-danger btn-sm" type="button" (click)="removeTodayTask(task)">-</button>
+              <button class="btn btn-danger btn-sm daily-task-remove-btn" type="button" (click)="removeTodayTask(task)">-</button>
             </div>
 
             <div class="info-box" *ngIf="getTodayTasksByProject(projectName).length === 0">Nenhuma tarefa neste projeto.</div>
@@ -312,8 +312,8 @@
     </div>
   </div>
 
-  <div style="margin-top:24px;display:flex;justify-content:flex-end">
-    <button class="btn btn-primary" style="padding:12px 40px;font-size:15px" (click)="save()" [disabled]="loading || isEditLocked">
+  <div class="daily-save-row" style="margin-top:24px;display:flex;justify-content:flex-end">
+    <button class="btn btn-primary daily-save-btn" style="padding:12px 40px;font-size:15px" (click)="save()" [disabled]="loading || isEditLocked">
       <span class="spinner" *ngIf="loading"></span>
       {{ loading ? 'Salvando...' : 'Salvar Daily' }}
     </button>

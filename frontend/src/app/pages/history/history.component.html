@@ -1,4 +1,4 @@
-<div class="fade-in">
+<div class="fade-in history-page">
   <div class="page-header">
     <div>
       <div class="page-title">Meu Historico</div>
@@ -52,7 +52,7 @@
       <div class="daily-section-text">{{ d.blockers }}</div>
     </div>
 
-    <div style="display: flex; gap: 3rem">
+    <div class="history-bottom-row" style="display: flex; gap: 3rem">
         <div class="daily-section" *ngIf="d.projectTimes?.length">
             <div class="daily-section-title">Tempo gasto em cada projeto</div>
             <div class="project-pills">
@@ -62,9 +62,9 @@
                 </div>
             </div>
         </div>
-        <div class="proto-badges" *ngIf="(d.totalProtocols ?? 0) > 0" style="display: flex; flex-direction: column">
+        <div class="proto-badges history-proto-badges" *ngIf="(d.totalProtocols ?? 0) > 0" style="display: flex; flex-direction: column">
             <div class="daily-section-title">Protocolos</div>
-            <div>
+            <div class="history-proto-list">
                 <span class="proto-badge" *ngIf="d.protocolFA" style="--pcolor:#00e5a0">FA {{ d.protocolFA }}</span>
                 <span class="proto-badge" *ngIf="d.protocolIMP" style="--pcolor:#3b82f6">IMP {{ d.protocolIMP }}</span>
                 <span class="proto-badge" *ngIf="d.protocolDE" style="--pcolor:#f59e0b">DE {{ d.protocolDE }}</span>

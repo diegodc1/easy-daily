@@ -181,6 +181,38 @@ select.form-control option { background: var(--surface); color: var(--text); }
 .proto-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
 .proto-badge  { padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; font-family: var(--font-mono); background: color-mix(in srgb, var(--pcolor, #888) 15%, transparent); color: var(--pcolor, #888); border: 1px solid color-mix(in srgb, var(--pcolor, #888) 30%, transparent); }
 
+/* ===== HISTORY ===== */
+.history-bottom-row { display: flex; gap: 3rem; align-items: flex-start; flex-wrap: wrap; }
+.history-bottom-row > * { min-width: 0; }
+.history-proto-badges { min-width: 0; width: 100%; max-width: 420px; }
+.history-proto-list { display: flex; flex-wrap: wrap; gap: 6px; max-width: 100%; }
+
+/* ===== NOTES ===== */
+.notes-create-grid > * { min-width: 0; }
+
+/* ===== DAILY FORM ===== */
+.daily-toolbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.daily-toolbar-label { margin: 0; white-space: nowrap; }
+.daily-toolbar-date { width: auto; min-width: 180px; }
+.daily-toolbar-icon-btn {
+  width: 40px;
+  min-width: 40px;
+  height: 40px;
+  padding: 0;
+  justify-content: center;
+}
+.daily-project-add-btn {
+  width: 40px;
+  min-width: 40px;
+  height: 40px !important;
+  padding: 0;
+  justify-content: center;
+}
+.daily-project-action-btn { white-space: nowrap; }
+.daily-task-remove-btn { min-width: 40px; width: 40px; height: 40px; padding: 0; justify-content: center; }
+.daily-save-row { margin-top: 24px; display: flex; justify-content: flex-end; }
+.daily-save-btn { min-width: 200px; }
+
 /* ===== PCT BADGE ===== */
 .pct-badge     { font-family: var(--font-mono); font-size: 13px; font-weight: 700; color: var(--accent); padding: 6px 14px; background: rgba(0,163,113,.1); border: 1px solid rgba(0,163,113,.25); border-radius: 20px; }
 .pct-badge.over{ color: var(--danger); background: rgba(220,38,38,.1); border-color: rgba(220,38,38,.3); }
@@ -446,16 +478,32 @@ select.form-control option { background: var(--surface); color: var(--text); }
   .daily-page .daily-main-grid { grid-template-columns: 1fr !important; }
   .daily-page .daily-right-column { min-width: 0; }
   .daily-page .daily-right-stack { width: 100%; }
+  .daily-page .daily-toolbar { width: 100%; }
+  .daily-page .daily-toolbar-date { flex: 1 1 220px; min-width: 0; width: auto !important; }
+  .daily-page .daily-toolbar-icon-btn { flex: 0 0 auto; }
   .daily-page .daily-project-add-row { align-items: stretch !important; flex-wrap: wrap; }
   .daily-page .daily-project-add-row > .form-control { flex: 1 1 100%; min-width: 0; }
   .daily-page .daily-project-add-row > .btn { flex: 0 0 auto; }
   .daily-page .daily-project-block-header { gap: 10px; }
   .daily-page .daily-project-actions { display: flex; flex-wrap: wrap; width: 100%; justify-content: flex-start; }
   .daily-page .daily-project-pct { width: 100% !important; max-width: 260px; }
-  .daily-page .daily-task-row { grid-template-columns: 1fr !important; }
-  .daily-page .daily-task-row .project-pill { justify-content: flex-start !important; }
-  .daily-page .daily-task-row .btn { width: auto; justify-self: end; }
+  .daily-page .daily-project-actions .btn { width: auto; min-width: 0; flex: 0 1 auto; }
+  .daily-page .daily-task-row { grid-template-columns: minmax(0, 1fr) auto !important; }
+  .daily-page .daily-task-row .project-pill { grid-column: 1 / -1; justify-content: flex-start !important; }
+  .daily-page .daily-task-row .form-control { grid-column: 1 / 2; min-width: 0; }
+  .daily-page .daily-task-row .daily-task-remove-btn { grid-column: 2 / 3; justify-self: end; }
   .daily-page .daily-blockers-card .toggle-wrap { align-items: flex-start; }
+  .daily-page .daily-save-btn { min-width: 0; }
+
+  /* Histórico */
+  .history-page .history-bottom-row { gap: 12px !important; }
+  .history-page .history-proto-badges { max-width: none; }
+
+  /* Anotações */
+  .notes-page .notes-create-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .notes-page .notes-create-grid > button { grid-column: 1 / -1; justify-self: end; width: auto; }
+  .notes-page .notes-filter-project,
+  .notes-page .notes-filter-search { min-width: 0 !important; }
 }
 @media (max-width: 768px) {
   body { overflow-x: hidden; }
@@ -473,7 +521,7 @@ select.form-control option { background: var(--surface); color: var(--text); }
   .btn { width: 100%; justify-content: center; }
   .btn-sm { width: auto; }
   .filter-bar { padding: 12px; gap: 10px; }
-  .filter-bar > * { flex: 1 1 100%; min-width: 0; }
+  /*.filter-bar > * { flex: 1 1 100%; min-width: 0; }*/
   .filter-bar .form-label { margin-bottom: 4px; }
   input.form-control[style*="width:auto"],
   select.form-control[style*="width:auto"],
@@ -491,13 +539,36 @@ select.form-control option { background: var(--surface); color: var(--text); }
   .login-box { padding: 28px 20px; }
 
   /* Minha Daily */
-  .daily-page .daily-project-add-row > .btn { width: 100%; }
-  .daily-page .daily-project-actions .btn { width: 100%; }
+  .daily-page .daily-toolbar { gap: 8px; }
+  .daily-page .daily-toolbar-label { flex: 1 1 100%; }
+  .daily-page .daily-toolbar-date { flex: 1 1 100%; }
+  .daily-page .daily-toolbar-icon-btn { width: 42px; min-width: 42px; height: 42px; }
+  .daily-page .daily-project-add-row > .btn { width: 42px; min-width: 42px; }
+  .daily-page .daily-project-actions .btn { width: auto; min-width: 44px; flex: 0 1 auto; }
   .daily-page .daily-project-pct { max-width: none; }
-  .daily-page .daily-task-row .btn { width: 100%; justify-self: stretch; }
+  .daily-page .daily-task-row { grid-template-columns: minmax(0, 1fr) auto !important; }
+  .daily-page .daily-task-row .daily-task-remove-btn { width: 42px; min-width: 42px; height: 42px; }
   .daily-page .daily-yesterday-card,
   .daily-page .daily-today-card,
   .daily-page .daily-blockers-card { padding: 12px; }
+  .daily-page .daily-save-row {
+    position: sticky;
+    bottom: 0;
+    z-index: 20;
+    padding-top: 10px;
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
+    background: linear-gradient(to top, var(--bg) 75%, transparent);
+  }
+  .daily-page .daily-save-btn { width: 100%; justify-content: center; padding: 12px 18px !important; }
+
+  /* Histórico */
+  .history-page .history-bottom-row { flex-direction: column; gap: 10px !important; }
+  .history-page .history-proto-list .proto-badge { white-space: nowrap; }
+
+  /* Anotações */
+  .notes-page .notes-create-grid { grid-template-columns: 1fr !important; }
+  .notes-page .notes-create-grid > button { width: 100%; }
+  .notes-page .notes-filter-bar > * { min-width: 0 !important; }
 
   /* Overrides para blocos com inline style que quebram no mobile */
   div[style*="grid-template-columns:1.7fr 1fr"] { grid-template-columns: 1fr !important; }
@@ -512,10 +583,25 @@ select.form-control option { background: var(--surface); color: var(--text); }
   }
 }
 @media (max-width: 560px) {
+  .daily-page .daily-project-actions { gap: 6px; }
+  .daily-page .daily-project-action-btn { flex: 1 1 calc(50% - 6px); text-align: center; justify-content: center; }
+  .daily-page .daily-project-action-btn:last-child { flex-basis: 100%; }
   .protocol-grid,
   .proto-kpi-row { grid-template-columns: 1fr; }
   .day-summary { padding: 12px 14px; }
   .day-summary-left,
   .day-summary-stats { width: 100%; }
   .postit-grid { grid-template-columns: 1fr; }
+  .daily-project-block-header {
+    flex-direction: column;
+  }
+  .daily-project-pct {
+    flex-wrap: nowrap;
+  }
+  .daily-project-add-row select{
+    width: 85% important;;
+  }
+  .daily-page .daily-project-add-row > .form-control {
+    flex: 1 !important;
+  }
 }

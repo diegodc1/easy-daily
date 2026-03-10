@@ -1,4 +1,4 @@
-<div class="fade-in">
+<div class="fade-in notes-page">
   <div class="page-header">
     <div>
       <div class="page-title">Anotações Gerais</div>
@@ -11,7 +11,7 @@
 
   <div class="card" style="margin-bottom:20px">
     <div class="card-title" style="margin-bottom:16px">Nova anotacao</div>
-    <div style="display:grid;grid-template-columns:220px 180px 220px 1fr auto;gap:10px;align-items:end">
+    <div class="notes-create-grid" style="display:grid;grid-template-columns:220px 180px 220px 1fr auto;gap:10px;align-items:end">
       <div>
         <label class="form-label">Projeto</label>
         <select class="form-control" [(ngModel)]="newNote.projectName" [ngModelOptions]="{standalone: true}">
@@ -38,15 +38,15 @@
     </div>
   </div>
 
-  <div class="filter-bar" style="margin-bottom:18px">
-    <div style="min-width:220px">
+  <div class="filter-bar notes-filter-bar" style="margin-bottom:18px">
+    <div class="notes-filter-project" style="min-width:220px">
       <label class="form-label">Filtrar por projeto</label>
       <select class="form-control" [(ngModel)]="filterProject" [ngModelOptions]="{standalone: true}">
         <option value="ALL">Todos os projetos</option>
         <option *ngFor="let p of projects" [value]="p.name">{{ p.name }}</option>
       </select>
     </div>
-    <div style="min-width:280px;flex:1">
+    <div class="notes-filter-search" style="min-width:280px;flex:1">
       <label class="form-label">Buscar texto</label>
       <input class="form-control" [(ngModel)]="searchText" [ngModelOptions]="{standalone: true}" placeholder="Digite para buscar">
     </div>
