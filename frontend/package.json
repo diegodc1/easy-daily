@@ -1,12 +1,17 @@
 {
   "name": "daily",
-  "version": "1.0.0",
+  "version": "1.1.1",
+  "main": "electron/main.js",
   "scripts": {
     "ng": "ng",
     "start": "ng serve --host 0.0.0.0 --port 4200",
     "build": "ng build",
     "build:prod": "ng build --configuration production",
-    "deploy": "ng build --base-href /daily/ && mvn clean package tomcat7:redeploy -DskipTests"
+    "build:electron": "ng build --configuration electron --base-href ./",
+    "deploy": "ng build --base-href /daily/ && mvn clean package tomcat7:redeploy -DskipTests",
+    "electron:start": "npm run build:electron && electron .",
+    "electron:dist": "npm run build:electron && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --win",
+    "electron:linux": "npm run build:electron && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --linux"
   },
   "dependencies": {
     "@angular/animations": "^17.0.0",
@@ -26,6 +31,30 @@
     "@angular-devkit/build-angular": "^17.0.0",
     "@angular/cli": "^17.0.0",
     "@angular/compiler-cli": "^17.0.0",
+    "cross-env": "^7.0.3",
+    "electron": "^37.2.0",
+    "electron-builder": "^25.1.8",
     "typescript": "~5.2.2"
+  },
+  "build": {
+    "appId": "com.daily.desktop",
+    "productName": "Daily",
+    "files": [
+      "electron/**/*",
+      "dist/daily-frontend/browser/**/*",
+      "build/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "build/logo-daily.ico",
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Daily"
+    }
   }
 }
