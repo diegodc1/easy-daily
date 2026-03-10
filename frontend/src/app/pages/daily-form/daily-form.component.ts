@@ -36,6 +36,7 @@ export class DailyFormComponent implements OnInit, AfterViewInit, OnDestroy {
   todayProjects: string[] = [];
   todayTasks: { projectName: string; description: string }[] = [];
   form: Daily = this.emptyForm();
+  private draftIntervalId: any = null;
 
   saveSuccess = false;
   saveError = '';
@@ -69,6 +70,7 @@ export class DailyFormComponent implements OnInit, AfterViewInit, OnDestroy {
         this.applyVisibleProjects(pref.projectIds ?? []);
         this.ensureSelectedProjects();
         this.loadForDate();
+        this.startDraftAutosave();
       });
     });
   }
@@ -79,6 +81,10 @@ export class DailyFormComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.destroyTooltips();
+    if (this.draftIntervalId) {
+      clearInterval(this.draftIntervalId);
+      this.draftIntervalId = null;
+    }
   }
 
   get visibleProjects(): AppProject[] {
@@ -133,6 +139,9 @@ export class DailyFormComponent implements OnInit, AfterViewInit, OnDestroy {
     this.protocolSyncLoading = false;
     this.protocolSyncMessage = '';
 
+    // tenta restaurar rascunho local para a data atual (antes de chamar a API)
+    this.loadDraftIfAny();
+
     this.svc.getByDate(this.selectedDate).pipe(catchError(() => of(null))).subscribe(d => {
       if (!d) {
         this.tryLoadTodayProtocols();
@@ -142,6 +151,7 @@ export class DailyFormComponent implements OnInit, AfterViewInit, OnDestroy {
       if (this.isTodaySelected()) {
         notifyDailyDone();
       }
+      this.clearDraft();
     });
   }
 
@@ -522,6 +532,7 @@ export class DailyFormComponent implements OnInit, AfterViewInit, OnDestroy {
       if (this.isTodaySelected()) {
         notifyDailyDone();
       }
+      this.clearDraft();
       this.saveSuccess = true;
       setTimeout(() => (this.saveSuccess = false), 3500);
     });
@@ -540,6 +551,63 @@ export class DailyFormComponent implements OnInit, AfterViewInit, OnDestroy {
     this.todayTasks = this.parseDoingToday(d.doingToday);
     this.syncTodayProjectsFromTasks();
     this.ensureSelectedProjects();
+  }
+
+  // ── Draft / localStorage ───────────────────────────────────────
+
+  private draftKey(): string {
+    return `daily-draft-${this.selectedDate}`;
+  }
+
+  private startDraftAutosave() {
+    if (this.draftIntervalId) return;
+    this.draftIntervalId = setInterval(() => {
+      if (!this.isTodaySelected() || this.isExistingDaily) return;
+      this.saveDraft();
+    }, 1000);
+  }
+
+  private saveDraft() {
+    try {
+      const payload = {
+        form: this.form,
+        todayTasks: this.todayTasks,
+        taskProjects: this.taskProjects,
+        todayProjects: this.todayProjects,
+      };
+      localStorage.setItem(this.draftKey(), JSON.stringify(payload));
+    } catch {
+      console.error("Erro:")
+    }
+  }
+
+  private loadDraftIfAny() {
+    try {
+      if (!this.isTodaySelected()) return;
+      const raw = localStorage.getItem(this.draftKey());
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (parsed?.form) {
+        this.form = {
+          ...this.emptyForm(),
+          ...parsed.form,
+          dailyDate: this.selectedDate,
+        };
+      }
+      this.todayTasks = parsed?.todayTasks ?? [];
+      this.taskProjects = parsed?.taskProjects ?? [];
+      this.todayProjects = parsed?.todayProjects ?? [];
+    } catch {
+      console.error("Erro:")
+    }
+  }
+
+  private clearDraft() {
+    try {
+      localStorage.removeItem(this.draftKey());
+    } catch {
+      console.error("Erro:")
+    }
   }
 
   barWidth(p: ProjectTime): string {
