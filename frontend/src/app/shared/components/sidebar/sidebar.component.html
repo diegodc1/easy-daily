@@ -1,32 +1,50 @@
-﻿<nav class="sidebar">
-  <div class="sidebar-logo">
-    <div class="logo-text">⬡ DAILY</div>
-    <div class="logo-sub">Equipe Verdeslagos</div>
+<nav class="sidebar">
+  <div class="sidebar-mobile-top">
+    <div class="sidebar-mobile-brand">
+      <div class="logo-text">⬡ DAILY</div>
+      <div class="logo-sub">Equipe Verdeslagos</div>
+    </div>
+    <button
+      class="sidebar-mobile-toggle"
+      type="button"
+      (click)="toggleMobileMenu()"
+      [attr.aria-expanded]="mobileMenuOpen"
+      aria-label="Abrir menu"
+    >
+      <span class="material-symbols-outlined">{{ mobileMenuOpen ? 'close' : 'menu' }}</span>
+    </button>
   </div>
 
-  <a class="nav-link" routerLink="/daily"   routerLinkActive="active"><span class="nav-icon">📝</span> Minha Daily</a>
-  <a class="nav-link" routerLink="/pre-daily" routerLinkActive="active"><span class="nav-icon">🧩</span> Pré-Daily</a>
-  <a class="nav-link" routerLink="/notes" routerLinkActive="active"><span class="nav-icon">🗒️</span> Anotações</a>
-  <a class="nav-link" routerLink="/history" routerLinkActive="active"><span class="nav-icon">📅</span> Histórico</a>
-  <a class="nav-link" routerLink="/projects" routerLinkActive="active"><span class="nav-icon">🗂</span> Projetos</a>
+  <div class="sidebar-menu" [class.open]="mobileMenuOpen">
+    <div class="sidebar-logo">
+      <div class="logo-text">⬡ DAILY</div>
+      <div class="logo-sub">Equipe Verdeslagos</div>
+    </div>
 
-  <ng-container *ngIf="auth.isAdmin()">
-    <div class="nav-divider"></div>
-    <div class="nav-section-label">Admin</div>
-    <a class="nav-link" routerLink="/dashboard"      routerLinkActive="active"><span class="nav-icon">📊</span> Dashboard</a>
-    <a class="nav-link" routerLink="/admin/dailies"  routerLinkActive="active"><span class="nav-icon">📋</span> Todas as Dailys</a>
-    <a class="nav-link" routerLink="/admin/users"    routerLinkActive="active"><span class="nav-icon">👥</span> Membros</a>
-  </ng-container>
+    <a class="nav-link" routerLink="/daily" routerLinkActive="active" (click)="closeMobileMenu()"><span class="nav-icon">📝</span> Minha Daily</a>
+    <a class="nav-link" routerLink="/pre-daily" routerLinkActive="active" (click)="closeMobileMenu()"><span class="nav-icon">🧩</span> Pré-Daily</a>
+    <a class="nav-link" routerLink="/notes" routerLinkActive="active" (click)="closeMobileMenu()"><span class="nav-icon">🗒️</span> Anotações</a>
+    <a class="nav-link" routerLink="/history" routerLinkActive="active" (click)="closeMobileMenu()"><span class="nav-icon">📅</span> Histórico</a>
+    <a class="nav-link" routerLink="/projects" routerLinkActive="active" (click)="closeMobileMenu()"><span class="nav-icon">🗂</span> Projetos</a>
 
-  <div class="sidebar-bottom">
-    <button class="theme-toggle" (click)="theme.toggle()" [title]="theme.isDark ? 'Mudar para tema claro' : 'Mudar para tema escuro'">
-      <span *ngIf="theme.isDark">☀️ Tema Claro</span>
-      <span *ngIf="!theme.isDark">🌙 Tema Escuro</span>
-    </button>
-    <div class="sidebar-user">
-      <div class="user-name">{{ auth.getUser()?.fullName }}</div>
-      <div class="user-role">{{ auth.getUser()?.role }}</div>
-      <button class="btn-logout" (click)="auth.logout()">↪ Sair</button>
+    <ng-container *ngIf="auth.isAdmin()">
+      <div class="nav-divider"></div>
+      <div class="nav-section-label">Admin</div>
+      <a class="nav-link" routerLink="/dashboard" routerLinkActive="active" (click)="closeMobileMenu()"><span class="nav-icon">📊</span> Dashboard</a>
+      <a class="nav-link" routerLink="/admin/dailies" routerLinkActive="active" (click)="closeMobileMenu()"><span class="nav-icon">📋</span> Todas as Dailys</a>
+      <a class="nav-link" routerLink="/admin/users" routerLinkActive="active" (click)="closeMobileMenu()"><span class="nav-icon">👥</span> Membros</a>
+    </ng-container>
+
+    <div class="sidebar-bottom">
+      <button class="theme-toggle" (click)="theme.toggle()" [title]="theme.isDark ? 'Mudar para tema claro' : 'Mudar para tema escuro'">
+        <span *ngIf="theme.isDark">☀️ Tema Claro</span>
+        <span *ngIf="!theme.isDark">🌙 Tema Escuro</span>
+      </button>
+      <div class="sidebar-user">
+        <div class="user-name">{{ auth.getUser()?.fullName }}</div>
+        <div class="user-role">{{ auth.getUser()?.role }}</div>
+        <button class="btn-logout" (click)="logout()">↪ Sair</button>
+      </div>
     </div>
   </div>
 </nav>
