@@ -7,6 +7,14 @@ let dailyDoneToday = false;
 let currentDateKey = new Date().toISOString().slice(0, 10);
 let nextNotificationTime = null;
 
+if (process.platform === 'win32') {
+  app.setAppUserModelId('com.daily.desktop');
+  startDailyReminderTimer();
+}
+
+// Define o ícone antes de qualquer coisa ser criada
+const iconPath = path.join(__dirname, 'logo-daily.ico');
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1280,
@@ -14,7 +22,7 @@ function createWindow() {
     minWidth: 1024,
     minHeight: 680,
     autoHideMenuBar: true,
-    icon: path.join(__dirname, '..', 'build', 'logo-daily.ico'),
+    icon: iconPath,
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
@@ -30,14 +38,20 @@ function createWindow() {
   mainWindow.on('close', (event) => {
     if (!app.isQuitting) {
       event.preventDefault();
+      mainWindow.minimize();
       mainWindow.hide();
     }
+  });
+
+  // Restaurar janela ao clicar na barra de tarefas
+  mainWindow.on('restore', () => {
+    mainWindow.show();
+    mainWindow.focus();
   });
 }
 
 function createTray() {
   if (tray) return;
-  const iconPath = path.join(__dirname, '..', 'build', 'logo-daily.ico');
   tray = new Tray(iconPath);
   tray.setToolTip('Daily');
 
@@ -143,6 +157,7 @@ if (!gotTheLock) {
   app.on('second-instance', () => {
     if (mainWindow) {
       if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.show();
       mainWindow.focus();
     }
   });

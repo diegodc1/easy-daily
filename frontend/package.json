@@ -1,6 +1,6 @@
 {
   "name": "daily",
-  "version": "1.1.1",
+  "version": "1.2.6",
   "main": "electron/main.js",
   "scripts": {
     "ng": "ng",
@@ -39,22 +39,39 @@
   "build": {
     "appId": "com.daily.desktop",
     "productName": "Daily",
+    "directories": {
+      "buildResources": "build",
+      "output": "dist"
+    },
     "files": [
       "electron/**/*",
       "dist/daily-frontend/browser/**/*",
-      "build/**/*",
+      "build/logo-daily.ico",
+      "electron/logo-daily.ico",
       "package.json"
     ],
     "win": {
-      "target": "nsis",
-      "icon": "build/logo-daily.ico",
-      "signAndEditExecutable": false
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "icon": "electron/logo-daily.ico",
+      "signAndEditExecutable": false,
+      "certificateFile": null,
+      "certificatePassword": null,
+      "executableName": "Daily",
+      "artifactName": "${productName} Setup ${version}.${ext}"
     },
     "nsis": {
       "oneClick": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Daily"
-    }
+      "shortcutName": "Daily",
+      "installerIcon": "build/logo-daily.ico",
+      "uninstallerIcon": "build/logo-daily.ico",
+      "installerHeaderIcon": "build/logo-daily.ico",
+      "include": "build/nsis-installer.nsh"
+    },
+    "publish": null
   }
 }
