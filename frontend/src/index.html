@@ -2,11 +2,52 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#1976d2">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Daily">
+  <meta name="description" content="Sistema de Daily para gerenciar suas tarefas diárias">
+  
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="/manifest.json">
+  
+  <!-- Apple iOS -->
+  <link rel="apple-touch-icon" href="/assets/icon-192x192.png">
+  <link rel="icon" type="image/png" href="/assets/icon-192x192.png">
+  <link rel="shortcut icon" href="/assets/icon-192x192.png">
+  
   <title>Daily System</title>
   <base href="/">
 </head>
 <body>
   <app-root></app-root>
+  
+  <script>
+    // Registra o service worker
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js')
+          .then((registration) => {
+            console.log('✅ Service Worker registrado:', registration);
+            
+            // Verifica por atualizações
+            registration.addEventListener('updatefound', () => {
+              const newWorker = registration.installing;
+              newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  // Nova versão disponível
+                  console.log('📦 Nova versão disponível');
+                }
+              });
+            });
+          })
+          .catch((error) => {
+            console.log('❌ Erro ao registrar Service Worker:', error);
+          });
+      });
+    }
+  </script>
 </body>
 </html>

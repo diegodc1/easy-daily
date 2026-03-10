@@ -18,7 +18,11 @@
             "browser": "src/main.ts",
             "polyfills": ["zone.js"],
             "tsConfig": "tsconfig.json",
-            "assets": [{ "glob": "**/*", "input": "src/assets", "output": "assets" }],
+            "assets": [
+              { "glob": "**/*", "input": "src/assets", "output": "assets" },
+              "src/manifest.json",
+              "src/service-worker.js"
+            ],
             "styles": ["src/styles.css"],
             "scripts": []
           },
