@@ -12,6 +12,7 @@ import {
   PROTOCOL_LABELS,
 } from '../../core/models/models';
 import { catchError, of } from 'rxjs';
+import { notifyDailyDone } from '../../core/electron-helper';
 import tippy, { type Instance } from 'tippy.js';
 
 @Component({
@@ -138,6 +139,9 @@ export class DailyFormComponent implements OnInit, AfterViewInit, OnDestroy {
         return;
       }
       this.applyDailyData(d);
+      if (this.isTodaySelected()) {
+        notifyDailyDone();
+      }
     });
   }
 
@@ -515,6 +519,9 @@ export class DailyFormComponent implements OnInit, AfterViewInit, OnDestroy {
       this.loading = false;
       if (!res) return;
       this.applyDailyData(res);
+      if (this.isTodaySelected()) {
+        notifyDailyDone();
+      }
       this.saveSuccess = true;
       setTimeout(() => (this.saveSuccess = false), 3500);
     });
