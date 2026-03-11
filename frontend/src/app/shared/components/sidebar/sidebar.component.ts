@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { ThemeService } from '../../../core/services/theme.service';
-import { environment } from '../../../../environments/environment';
 
 @Component({
   selector: 'app-sidebar',
@@ -13,20 +12,24 @@ import { environment } from '../../../../environments/environment';
 })
 export class SidebarComponent implements OnInit {
   mobileMenuOpen = false;
-  appVersion = environment.appVersion || '';
+  appVersion = '';
 
   constructor(public auth: AuthService, public theme: ThemeService) {}
 
   ngOnInit(): void {
     const getVersion = window.dailyElectron?.getAppVersion;
-    if (!getVersion) return;
-    getVersion()
-      .then(version => {
-        this.appVersion = version || '';
-      })
-      .catch(() => {
-        this.appVersion = '';
-      });
+    if (getVersion) {
+      getVersion()
+        .then(version => {
+          this.appVersion = version || '';
+        })
+        .catch(() => {
+          this.loadWebVersion();
+        });
+      return;
+    }
+
+    this.loadWebVersion();
   }
 
   toggleMobileMenu(): void {
@@ -53,5 +56,16 @@ export class SidebarComponent implements OnInit {
 
   private isMobileViewport(): boolean {
     return typeof window !== 'undefined' && window.matchMedia('(max-width: 900px)').matches;
+  }
+
+  private loadWebVersion(): void {
+    fetch('assets/version.json', { cache: 'no-store' })
+      .then(response => (response.ok ? response.json() : null))
+      .then(data => {
+        this.appVersion = typeof data?.version === 'string' ? data.version : '';
+      })
+      .catch(() => {
+        this.appVersion = '';
+      });
   }
 }

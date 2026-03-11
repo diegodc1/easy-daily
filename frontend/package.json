@@ -5,6 +5,11 @@
   "author": "diegodc1",
   "main": "electron/main.js",
   "scripts": {
+    "version:sync": "node scripts/generate-version.js",
+    "prestart": "npm run version:sync",
+    "prebuild": "npm run version:sync",
+    "prebuild:prod": "npm run version:sync",
+    "prebuild:electron": "npm run version:sync",
     "ng": "ng",
     "start": "ng serve --host 0.0.0.0 --port 4200",
     "build": "ng build",
@@ -14,7 +19,7 @@
     "electron:start": "npm run build:electron && electron .",
     "electron:dist": "npm run build:electron && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --win",
     "electron:linux": "npm run build:electron && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --linux",
-    "electron:publish": "npm run build:electron && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --win --publish always"
+    "electron:publish": "npm run build:electron && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --win nsis --publish always"
   },
   "dependencies": {
     "@angular/animations": "^17.0.0",
@@ -56,8 +61,7 @@
     ],
     "win": {
       "target": [
-        "nsis",
-        "portable"
+        "nsis"
       ],
       "icon": "electron/logo-daily.ico",
       "signAndEditExecutable": false,
