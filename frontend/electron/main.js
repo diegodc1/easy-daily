@@ -9,6 +9,9 @@ let currentDateKey = getLocalDateKey(new Date());
 let nextNotificationTime = null;
 let reminderIntervalId = null;
 let updaterIntervalId = null;
+let isCheckingForMinimizeUpdate = false;
+let updateDownloaded = false;
+let shouldInstallAfterMinimize = false;
 
 // Define o ícone antes de qualquer coisa ser criada
 const iconPath = path.join(__dirname, 'logo-daily.ico');
@@ -52,6 +55,10 @@ function createWindow() {
   mainWindow.on('restore', () => {
     mainWindow.show();
     mainWindow.focus();
+  });
+
+  mainWindow.on('minimize', () => {
+    checkUpdatesOnMinimize();
   });
 }
 
@@ -151,11 +158,16 @@ function initAutoUpdater() {
   });
 
   autoUpdater.on('update-downloaded', () => {
+    updateDownloaded = true;
     const notification = new Notification({
       title: 'Atualizacao pronta',
       body: 'A nova versao foi baixada e sera instalada ao fechar o aplicativo.',
     });
     notification.show();
+
+    if (shouldInstallAfterMinimize) {
+      installDownloadedUpdate();
+    }
   });
 
   autoUpdater.checkForUpdates().catch((error) => {
@@ -169,6 +181,35 @@ function initAutoUpdater() {
       });
     }, 6 * 60 * 60 * 1000);
   }
+}
+
+function installDownloadedUpdate() {
+  if (!app.isPackaged || !updateDownloaded) return;
+  app.isQuitting = true;
+  autoUpdater.quitAndInstall(false, true);
+}
+
+function checkUpdatesOnMinimize() {
+  if (!app.isPackaged) return;
+
+  shouldInstallAfterMinimize = true;
+
+  if (updateDownloaded) {
+    installDownloadedUpdate();
+    return;
+  }
+
+  if (isCheckingForMinimizeUpdate) return;
+  isCheckingForMinimizeUpdate = true;
+
+  autoUpdater
+    .checkForUpdates()
+    .catch((error) => {
+      console.error('[autoUpdater] minimize check failed:', error?.message || error);
+    })
+    .finally(() => {
+      isCheckingForMinimizeUpdate = false;
+    });
 }
 
 ipcMain.on('daily:done', () => {
