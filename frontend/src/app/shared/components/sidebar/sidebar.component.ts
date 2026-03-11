@@ -1,4 +1,4 @@
-import { Component, HostListener, OnInit } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
@@ -13,19 +13,21 @@ import { notifyDailyDone, notifyDailyNotDone } from '../../../core/electron-help
   imports: [CommonModule, RouterModule],
   templateUrl: './sidebar.component.html',
 })
-export class SidebarComponent implements OnInit {
+export class SidebarComponent implements OnInit, OnDestroy {
   mobileMenuOpen = false;
   appVersion = '';
   updateAvailable = false;
   updateInProgress = false;
   updateActionInProgress = false;
   updateStatusMessage = '';
+  private updatePollIntervalId: ReturnType<typeof setInterval> | null = null;
 
   constructor(public auth: AuthService, public theme: ThemeService, private dailyService: DailyService) {}
 
   ngOnInit(): void {
     this.syncTodayDailyStatusForElectron();
     this.refreshUpdateAvailability();
+    this.startUpdatePolling();
 
     const getVersion = window.dailyElectron?.getAppVersion;
     if (getVersion) {
@@ -40,6 +42,13 @@ export class SidebarComponent implements OnInit {
     }
 
     this.loadWebVersion();
+  }
+
+  ngOnDestroy(): void {
+    if (this.updatePollIntervalId) {
+      clearInterval(this.updatePollIntervalId);
+      this.updatePollIntervalId = null;
+    }
   }
 
   refreshUpdateAvailability(): void {
@@ -81,6 +90,15 @@ export class SidebarComponent implements OnInit {
       .finally(() => {
         this.updateActionInProgress = false;
       });
+  }
+
+  private startUpdatePolling(): void {
+    if (!window.dailyElectron?.checkUpdateAvailability) return;
+    if (this.updatePollIntervalId) return;
+
+    this.updatePollIntervalId = setInterval(() => {
+      this.refreshUpdateAvailability();
+    }, 30000);
   }
 
   private syncTodayDailyStatusForElectron(): void {

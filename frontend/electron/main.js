@@ -156,10 +156,11 @@ function startDailyReminderTimer() {
 function initAutoUpdater() {
   if (!app.isPackaged) return;
 
-  autoUpdater.autoDownload = false;
+  autoUpdater.autoDownload = true;
   autoUpdater.autoInstallOnAppQuit = true;
 
   autoUpdater.on('error', (error) => {
+    isDownloadingUpdate = false;
     console.error('[autoUpdater] error:', error?.message || error);
   });
 
@@ -169,11 +170,13 @@ function initAutoUpdater() {
 
   autoUpdater.on('update-not-available', () => {
     updateAvailable = false;
+    isDownloadingUpdate = false;
   });
 
   autoUpdater.on('update-downloaded', () => {
     updateAvailable = true;
     updateDownloaded = true;
+    isDownloadingUpdate = false;
     const notification = new Notification({
       title: 'Atualizacao pronta',
       body: 'A nova versao foi baixada e sera instalada ao fechar o aplicativo.',
@@ -183,6 +186,10 @@ function initAutoUpdater() {
     if (shouldInstallAfterMinimize || shouldInstallAfterManualTrigger) {
       installDownloadedUpdate();
     }
+  });
+
+  autoUpdater.on('download-progress', () => {
+    isDownloadingUpdate = true;
   });
 
   checkForUpdatesSafe('startup');
@@ -323,11 +330,13 @@ if (!gotTheLock) {
   });
 
   app.on('second-instance', () => {
-    if (mainWindow) {
-      if (mainWindow.isMinimized()) mainWindow.restore();
-      mainWindow.show();
-      mainWindow.focus();
+    if (!mainWindow || mainWindow.isDestroyed()) {
+      createWindow();
+      return;
     }
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    mainWindow.show();
+    mainWindow.focus();
   });
 
   app.on('activate', () => {
