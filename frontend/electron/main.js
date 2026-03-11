@@ -41,6 +41,7 @@ function createWindow() {
 
   const indexPath = path.join(__dirname, '..', 'dist', 'daily-frontend', 'browser', 'index.html');
   mainWindow.loadFile(indexPath);
+  mainWindow.maximize();
 
   // Minimizar para a bandeja ao fechar a janela (ficar em segundo plano)
   mainWindow.on('close', (event) => {
