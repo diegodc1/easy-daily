@@ -1,8 +1,9 @@
-import { Component, HostListener } from '@angular/core';
+import { Component, HostListener, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { ThemeService } from '../../../core/services/theme.service';
+import { environment } from '../../../../environments/environment';
 
 @Component({
   selector: 'app-sidebar',
@@ -10,10 +11,23 @@ import { ThemeService } from '../../../core/services/theme.service';
   imports: [CommonModule, RouterModule],
   templateUrl: './sidebar.component.html',
 })
-export class SidebarComponent {
+export class SidebarComponent implements OnInit {
   mobileMenuOpen = false;
+  appVersion = environment.appVersion || '';
 
   constructor(public auth: AuthService, public theme: ThemeService) {}
+
+  ngOnInit(): void {
+    const getVersion = window.dailyElectron?.getAppVersion;
+    if (!getVersion) return;
+    getVersion()
+      .then(version => {
+        this.appVersion = version || '';
+      })
+      .catch(() => {
+        this.appVersion = '';
+      });
+  }
 
   toggleMobileMenu(): void {
     this.mobileMenuOpen = !this.mobileMenuOpen;

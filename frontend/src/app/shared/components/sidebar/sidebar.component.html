@@ -21,29 +21,30 @@
       <div class="logo-sub">Equipe Verdeslagos</div>
     </div>
 
-    <a class="nav-link" routerLink="/daily" routerLinkActive="active" (click)="closeMobileMenu()"><span class="nav-icon">📝</span> Minha Daily</a>
-    <a class="nav-link" routerLink="/pre-daily" routerLinkActive="active" (click)="closeMobileMenu()"><span class="nav-icon">🧩</span> Pré-Daily</a>
-    <a class="nav-link" routerLink="/notes" routerLinkActive="active" (click)="closeMobileMenu()"><span class="nav-icon">🗒️</span> Anotações</a>
-    <a class="nav-link" routerLink="/history" routerLinkActive="active" (click)="closeMobileMenu()"><span class="nav-icon">📅</span> Histórico</a>
-    <a class="nav-link" routerLink="/projects" routerLinkActive="active" (click)="closeMobileMenu()"><span class="nav-icon">🗂</span> Projetos</a>
+    <a class="nav-link" routerLink="/daily" routerLinkActive="active" (click)="closeMobileMenu()"><span class="nav-icon material-symbols-outlined">edit_note</span> Minha Daily</a>
+    <a class="nav-link" routerLink="/pre-daily" routerLinkActive="active" (click)="closeMobileMenu()"><span class="nav-icon material-symbols-outlined">checklist</span> Pre-Daily</a>
+    <a class="nav-link" routerLink="/notes" routerLinkActive="active" (click)="closeMobileMenu()"><span class="nav-icon material-symbols-outlined">sticky_note_2</span> Anotacoes</a>
+    <a class="nav-link" routerLink="/history" routerLinkActive="active" (click)="closeMobileMenu()"><span class="nav-icon material-symbols-outlined">history</span> Historico</a>
+    <a class="nav-link" routerLink="/projects" routerLinkActive="active" (click)="closeMobileMenu()"><span class="nav-icon material-symbols-outlined">folder</span> Projetos</a>
 
     <ng-container *ngIf="auth.isAdmin()">
       <div class="nav-divider"></div>
       <div class="nav-section-label">Admin</div>
-      <a class="nav-link" routerLink="/dashboard" routerLinkActive="active" (click)="closeMobileMenu()"><span class="nav-icon">📊</span> Dashboard</a>
-      <a class="nav-link" routerLink="/admin/dailies" routerLinkActive="active" (click)="closeMobileMenu()"><span class="nav-icon">📋</span> Todas as Dailys</a>
-      <a class="nav-link" routerLink="/admin/users" routerLinkActive="active" (click)="closeMobileMenu()"><span class="nav-icon">👥</span> Membros</a>
+      <a class="nav-link" routerLink="/dashboard" routerLinkActive="active" (click)="closeMobileMenu()"><span class="nav-icon material-symbols-outlined">dashboard</span> Dashboard</a>
+      <a class="nav-link" routerLink="/admin/dailies" routerLinkActive="active" (click)="closeMobileMenu()"><span class="nav-icon material-symbols-outlined">list_alt</span> Todas as Dailys</a>
+      <a class="nav-link" routerLink="/admin/users" routerLinkActive="active" (click)="closeMobileMenu()"><span class="nav-icon material-symbols-outlined">group</span> Membros</a>
     </ng-container>
 
     <div class="sidebar-bottom">
       <button class="theme-toggle" (click)="theme.toggle()" [title]="theme.isDark ? 'Mudar para tema claro' : 'Mudar para tema escuro'">
-        <span *ngIf="theme.isDark">☀️ Tema Claro</span>
-        <span *ngIf="!theme.isDark">🌙 Tema Escuro</span>
+        <span *ngIf="theme.isDark">Tema Claro</span>
+        <span *ngIf="!theme.isDark">Tema Escuro</span>
       </button>
       <div class="sidebar-user">
         <div class="user-name">{{ auth.getUser()?.fullName }}</div>
         <div class="user-role">{{ auth.getUser()?.role }}</div>
-        <button class="btn-logout" (click)="logout()">↪ Sair</button>
+        <button class="btn-logout" (click)="logout()">Sair</button>
+        <div class="app-version" *ngIf="appVersion">Versao {{ appVersion }}</div>
       </div>
     </div>
   </div>
