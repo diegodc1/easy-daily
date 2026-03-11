@@ -17,7 +17,8 @@ let shouldInstallAfterMinimize = false;
 let shouldInstallAfterManualTrigger = false;
 
 // Define o ícone antes de qualquer coisa ser criada
-const iconPath = path.join(__dirname, 'logo-daily.ico');
+const isWindows = process.platform === 'win32';
+const iconPath = path.join(__dirname, isWindows ? 'logo-daily.ico' : 'logo-daily.png');
 
 function getLocalDateKey(date) {
   const year = date.getFullYear();
@@ -48,7 +49,7 @@ function createWindow() {
 
   // Minimizar para a bandeja ao fechar a janela (ficar em segundo plano)
   mainWindow.on('close', (event) => {
-    if (!app.isQuitting) {
+    if (isWindows && !app.isQuitting) {
       event.preventDefault();
       mainWindow.minimize();
       mainWindow.hide();
@@ -67,6 +68,7 @@ function createWindow() {
 }
 
 function createTray() {
+  if (!isWindows) return;
   if (tray) return;
   tray = new Tray(iconPath);
   tray.setToolTip('Daily');
@@ -309,13 +311,15 @@ if (!gotTheLock) {
 } else {
   app.isQuitting = false;
   app.whenReady().then(() => {
-    if (process.platform === 'win32') {
+    if (isWindows) {
       app.setAppUserModelId('com.daily.desktop');
       startDailyReminderTimer();
     }
     initAutoUpdater();
     createWindow();
     createTray();
+  }).catch((error) => {
+    console.error('[app] ready failed:', error?.message || error);
   });
 
   app.on('second-instance', () => {
