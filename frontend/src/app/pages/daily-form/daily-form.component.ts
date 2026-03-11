@@ -25,7 +25,7 @@ export class DailyFormComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('replicateBtn') replicateBtn?: ElementRef<HTMLElement>;
   @ViewChild('pullPreBtn') pullPreBtn?: ElementRef<HTMLElement>;
 
-  selectedDate = new Date().toISOString().slice(0, 10);
+  selectedDate = this.getLocalDateKey();
   todayStr = new Date().toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
   projects: AppProject[] = [];
@@ -275,7 +275,14 @@ export class DailyFormComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private isTodaySelected(): boolean {
-    return this.selectedDate === new Date().toISOString().slice(0, 10);
+    return this.selectedDate === this.getLocalDateKey();
+  }
+
+  private getLocalDateKey(date = new Date()): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 
   private getPreviousDate(dateStr: string): string {
