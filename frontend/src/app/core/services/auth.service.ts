@@ -9,6 +9,7 @@ import { environment } from '../../../environments/environment';
 export class AuthService {
   private user$ = new BehaviorSubject<LoginResponse | null>(null);
   currentUser$ = this.user$.asObservable();
+  private redirectingToLogin = false;
 
   constructor(private http: HttpClient, private router: Router) {
     const stored = localStorage.getItem('daily_user');
@@ -16,7 +17,7 @@ export class AuthService {
     try {
       const parsed = JSON.parse(stored) as LoginResponse;
       if (this.isTokenExpired(localStorage.getItem('daily_token'))) {
-        this.clearSession();
+        this.clearSessionAndRedirect();
         return;
       }
       this.user$.next(parsed);
@@ -43,7 +44,7 @@ export class AuthService {
   getToken(): string | null {
     const token = localStorage.getItem('daily_token');
     if (this.isTokenExpired(token)) {
-      this.clearSession();
+      this.clearSessionAndRedirect();
       return null;
     }
     return token;
@@ -51,12 +52,30 @@ export class AuthService {
 
   getUser():     LoginResponse | null { return this.user$.value; }
   isAdmin():     boolean { return this.user$.value?.role === 'ADMIN'; }
-  isLoggedIn():  boolean { return !!this.user$.value && !!this.getToken(); }
+  isLoggedIn():  boolean {
+    const token = localStorage.getItem('daily_token');
+    const hasUser = !!this.user$.value;
+    if (!hasUser || !token) return false;
+    if (this.isTokenExpired(token)) {
+      this.clearSessionAndRedirect();
+      return false;
+    }
+    return true;
+  }
 
   private clearSession() {
     localStorage.removeItem('daily_user');
     localStorage.removeItem('daily_token');
     this.user$.next(null);
+  }
+
+  private clearSessionAndRedirect() {
+    this.clearSession();
+    if (this.redirectingToLogin) return;
+    this.redirectingToLogin = true;
+    this.router.navigate(['/login']).finally(() => {
+      this.redirectingToLogin = false;
+    });
   }
 
   private isTokenExpired(token: string | null): boolean {
