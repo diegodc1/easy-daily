@@ -12,7 +12,7 @@ import {
   PROTOCOL_LABELS,
 } from '../../core/models/models';
 import { catchError, of } from 'rxjs';
-import { notifyDailyDone } from '../../core/electron-helper';
+import { notifyDailyDone, notifyDailyNotDone } from '../../core/electron-helper';
 import tippy, { type Instance } from 'tippy.js';
 
 @Component({
@@ -148,6 +148,9 @@ export class DailyFormComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.svc.getByDate(this.selectedDate).pipe(catchError(() => of(null))).subscribe(d => {
       if (!d) {
+        if (this.isTodaySelected()) {
+          notifyDailyNotDone();
+        }
         this.tryLoadTodayProtocols();
         return;
       }

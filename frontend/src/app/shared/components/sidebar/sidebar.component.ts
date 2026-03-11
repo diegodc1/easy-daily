@@ -3,6 +3,9 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { ThemeService } from '../../../core/services/theme.service';
+import { DailyService } from '../../../core/services/daily.service';
+import { catchError, of } from 'rxjs';
+import { notifyDailyDone, notifyDailyNotDone } from '../../../core/electron-helper';
 
 @Component({
   selector: 'app-sidebar',
@@ -14,9 +17,11 @@ export class SidebarComponent implements OnInit {
   mobileMenuOpen = false;
   appVersion = '';
 
-  constructor(public auth: AuthService, public theme: ThemeService) {}
+  constructor(public auth: AuthService, public theme: ThemeService, private dailyService: DailyService) {}
 
   ngOnInit(): void {
+    this.syncTodayDailyStatusForElectron();
+
     const getVersion = window.dailyElectron?.getAppVersion;
     if (getVersion) {
       getVersion()
@@ -30,6 +35,26 @@ export class SidebarComponent implements OnInit {
     }
 
     this.loadWebVersion();
+  }
+
+  private syncTodayDailyStatusForElectron(): void {
+    if (!window.dailyElectron) return;
+
+    const today = this.getLocalDateKey();
+    this.dailyService.getByDate(today).pipe(catchError(() => of(null))).subscribe(daily => {
+      if (daily) {
+        notifyDailyDone();
+        return;
+      }
+      notifyDailyNotDone();
+    });
+  }
+
+  private getLocalDateKey(date = new Date()): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 
   toggleMobileMenu(): void {

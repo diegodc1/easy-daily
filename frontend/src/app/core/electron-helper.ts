@@ -14,3 +14,7 @@ export function notifyDailyDone() {
   window.dailyElectron?.markDailyDone?.();
 }
 
+export function notifyDailyNotDone() {
+  window.dailyElectron?.markDailyNotDone?.();
+}
+

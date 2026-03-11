@@ -4,7 +4,7 @@ const path = require('path');
 
 let mainWindow;
 let tray;
-let dailyDoneToday = false;
+let dailyDoneToday = null;
 let currentDateKey = getLocalDateKey(new Date());
 let nextNotificationTime = null;
 let reminderIntervalId = null;
@@ -110,14 +110,14 @@ function resetDailyStateIfNeeded() {
   const todayKey = getLocalDateKey(now);
   if (todayKey !== currentDateKey) {
     currentDateKey = todayKey;
-    dailyDoneToday = false;
+    dailyDoneToday = null;
     nextNotificationTime = null;
   }
 }
 
 function maybeNotifyPendingDaily() {
   resetDailyStateIfNeeded();
-  if (dailyDoneToday) return;
+  if (dailyDoneToday !== false) return;
 
   const now = new Date();
   const minutesSinceMidnight = now.getHours() * 60 + now.getMinutes();
