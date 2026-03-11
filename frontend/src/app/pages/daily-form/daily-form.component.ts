@@ -39,6 +39,7 @@ export class DailyFormComponent implements OnInit, AfterViewInit, OnDestroy {
   private draftIntervalId: any = null;
 
   saveSuccess = false;
+  successMessage = '';
   saveError = '';
   loading = false;
 
@@ -201,6 +202,7 @@ export class DailyFormComponent implements OnInit, AfterViewInit, OnDestroy {
       this.todayTasks = this.parseDoingToday(prev.doingToday);
       this.syncTodayProjectsFromTasks();
       this.ensureSelectedProjects();
+      this.successMessage = 'Daily anterior carregada no formulario. Clique em Salvar Daily para persistir.';
       this.saveSuccess = true;
       setTimeout(() => (this.saveSuccess = false), 3500);
     });
@@ -230,6 +232,7 @@ export class DailyFormComponent implements OnInit, AfterViewInit, OnDestroy {
       this.syncTaskProjectsFromTasks();
 
       this.form.doneYesterday = tasks.map(t => `- [${t.projectName}] ${t.description}`).join('\n');
+      this.successMessage = 'Pre-daily carregada no formulario. Clique em Salvar Daily para persistir.';
       this.saveSuccess = true;
       setTimeout(() => (this.saveSuccess = false), 3500);
     });
@@ -564,6 +567,7 @@ export class DailyFormComponent implements OnInit, AfterViewInit, OnDestroy {
         notifyDailyDone();
       }
       this.clearDraft();
+      this.successMessage = 'Daily salva com sucesso.';
       this.saveSuccess = true;
       setTimeout(() => (this.saveSuccess = false), 3500);
     });
