@@ -1,7 +1,8 @@
 export const environment = {
   production: false,
+  appVersion: '1.2.6',
   apiUrl: 'http://localhost:9999/daily-system/api',
   protocolsResumeBaseUrl: 'http://localhost:9999/documentation/bitrix/inbox/resume'
-  // Para rede interna, altere para o IP do servidor:
-  // apiUrl: 'http://192.168.1.100:8080/api'
+
+  //apiUrl: 'http://localhost:8080/api'
 };

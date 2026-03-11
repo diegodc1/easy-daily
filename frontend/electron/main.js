@@ -1,4 +1,5 @@
 const { app, BrowserWindow, Notification, ipcMain, Tray, Menu } = require('electron');
+const { autoUpdater } = require('electron-updater');
 const path = require('path');
 
 let mainWindow;
@@ -7,6 +8,7 @@ let dailyDoneToday = false;
 let currentDateKey = getLocalDateKey(new Date());
 let nextNotificationTime = null;
 let reminderIntervalId = null;
+let updaterIntervalId = null;
 
 // Define o ícone antes de qualquer coisa ser criada
 const iconPath = path.join(__dirname, 'logo-daily.ico');
@@ -138,6 +140,37 @@ function startDailyReminderTimer() {
   reminderIntervalId = setInterval(maybeNotifyPendingDaily, 60 * 1000);
 }
 
+function initAutoUpdater() {
+  if (!app.isPackaged) return;
+
+  autoUpdater.autoDownload = true;
+  autoUpdater.autoInstallOnAppQuit = true;
+
+  autoUpdater.on('error', (error) => {
+    console.error('[autoUpdater] error:', error?.message || error);
+  });
+
+  autoUpdater.on('update-downloaded', () => {
+    const notification = new Notification({
+      title: 'Atualizacao pronta',
+      body: 'A nova versao foi baixada e sera instalada ao fechar o aplicativo.',
+    });
+    notification.show();
+  });
+
+  autoUpdater.checkForUpdates().catch((error) => {
+    console.error('[autoUpdater] check failed:', error?.message || error);
+  });
+
+  if (!updaterIntervalId) {
+    updaterIntervalId = setInterval(() => {
+      autoUpdater.checkForUpdates().catch((error) => {
+        console.error('[autoUpdater] periodic check failed:', error?.message || error);
+      });
+    }, 6 * 60 * 60 * 1000);
+  }
+}
+
 ipcMain.on('daily:done', () => {
   dailyDoneToday = true;
 });
@@ -146,14 +179,20 @@ ipcMain.on('daily:notDone', () => {
   dailyDoneToday = false;
 });
 
+ipcMain.handle('app:getVersion', () => {
+  return app.getVersion();
+});
+
 if (!gotTheLock) {
   app.quit();
 } else {
+  app.isQuitting = false;
   app.whenReady().then(() => {
     if (process.platform === 'win32') {
       app.setAppUserModelId('com.daily.desktop');
       startDailyReminderTimer();
     }
+    initAutoUpdater();
     createWindow();
     createTray();
   });

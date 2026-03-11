@@ -5,6 +5,7 @@ declare global {
     dailyElectron?: {
       markDailyDone: () => void;
       markDailyNotDone: () => void;
+      getAppVersion?: () => Promise<string>;
     };
   }
 }

@@ -11,7 +11,8 @@
     "deploy": "ng build --base-href /daily/ && mvn clean package tomcat7:redeploy -DskipTests",
     "electron:start": "npm run build:electron && electron .",
     "electron:dist": "npm run build:electron && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --win && npm run embed:icon",
-    "electron:linux": "npm run build:electron && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --linux"
+    "electron:linux": "npm run build:electron && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --linux",
+    "electron:publish": "npm run build:electron && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --win --publish always"
   },
   "dependencies": {
     "@angular/animations": "^17.0.0",
@@ -22,6 +23,7 @@
     "@angular/platform-browser": "^17.0.0",
     "@angular/platform-browser-dynamic": "^17.0.0",
     "@angular/router": "^17.0.0",
+    "electron-updater": "^6.8.3",
     "material-symbols": "^0.40.2",
     "rxjs": "~7.8.0",
     "tippy.js": "^6.3.7",
@@ -72,6 +74,13 @@
       "installerHeaderIcon": "build/logo-daily.ico",
       "include": "build/nsis-installer.nsh"
     },
-    "publish": null
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "${env.GH_OWNER}",
+        "repo": "${env.GH_REPO}",
+        "releaseType": "release"
+      }
+    ]
   }
 }
