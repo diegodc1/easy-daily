@@ -87,7 +87,10 @@ public class DailyService {
         } else {
             daily.setDoneYesterday(req.getDoneYesterday());
         }
-        return toResponse(dailyRepository.save(daily));
+        Daily saved = dailyRepository.save(daily);
+        DailyResponse response = toResponse(saved);
+        applyEditPermission(response, user, saved);
+        return response;
     }
 
     public Optional<DailyResponse> getByUserAndDate(User user, LocalDate date) {
