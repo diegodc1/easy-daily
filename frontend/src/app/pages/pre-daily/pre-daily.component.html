@@ -63,7 +63,7 @@
     <button class="btn btn-danger" style="margin-right:10px" (click)="openClearModal()" [disabled]="loading || clearLoading">
       Limpar Pré-Daily
     </button>
-    <button class="btn btn-primary" style="padding:12px 40px;font-size:15px" (click)="save()" [disabled]="loading">
+    <button class="btn btn-primary" style="padding:12px 40px; color: white; font-size:15px" (click)="save()" [disabled]="loading">
       <span class="spinner" *ngIf="loading"></span>
       {{ loading ? 'Salvando...' : 'Salvar Pré-Daily' }}
     </button>
