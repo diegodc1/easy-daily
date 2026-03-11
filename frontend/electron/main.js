@@ -25,8 +25,8 @@ function getLocalDateKey(date) {
 
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 1280,
-    height: 820,
+    width: 1680,
+    height: 1040,
     minWidth: 1024,
     minHeight: 680,
     autoHideMenuBar: true,
