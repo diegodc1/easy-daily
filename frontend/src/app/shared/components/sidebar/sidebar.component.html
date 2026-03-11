@@ -1,7 +1,7 @@
 <nav class="sidebar">
   <div class="sidebar-mobile-top">
     <div class="sidebar-mobile-brand">
-      <div class="logo-text">⬡ DAILY</div>
+      <div class="logo-text">DAILY</div>
       <div class="logo-sub">Equipe Verdeslagos</div>
     </div>
     <button
@@ -17,14 +17,14 @@
 
   <div class="sidebar-menu" [class.open]="mobileMenuOpen">
     <div class="sidebar-logo">
-      <div class="logo-text">⬡ DAILY</div>
+      <div class="logo-text">DAILY</div>
       <div class="logo-sub">Equipe Verdeslagos</div>
     </div>
 
     <a class="nav-link" routerLink="/daily" routerLinkActive="active" (click)="closeMobileMenu()"><span class="nav-icon material-symbols-outlined">edit_note</span> Minha Daily</a>
-    <a class="nav-link" routerLink="/pre-daily" routerLinkActive="active" (click)="closeMobileMenu()"><span class="nav-icon material-symbols-outlined">checklist</span> Pré-Daily</a>
-    <a class="nav-link" routerLink="/notes" routerLinkActive="active" (click)="closeMobileMenu()"><span class="nav-icon material-symbols-outlined">sticky_note_2</span> Anotações</a>
-    <a class="nav-link" routerLink="/history" routerLinkActive="active" (click)="closeMobileMenu()"><span class="nav-icon material-symbols-outlined">history</span> Histórico</a>
+    <a class="nav-link" routerLink="/pre-daily" routerLinkActive="active" (click)="closeMobileMenu()"><span class="nav-icon material-symbols-outlined">checklist</span> Pre-Daily</a>
+    <a class="nav-link" routerLink="/notes" routerLinkActive="active" (click)="closeMobileMenu()"><span class="nav-icon material-symbols-outlined">sticky_note_2</span> Anotacoes</a>
+    <a class="nav-link" routerLink="/history" routerLinkActive="active" (click)="closeMobileMenu()"><span class="nav-icon material-symbols-outlined">history</span> Historico</a>
     <a class="nav-link" routerLink="/projects" routerLinkActive="active" (click)="closeMobileMenu()"><span class="nav-icon material-symbols-outlined">folder</span> Projetos</a>
 
     <ng-container *ngIf="auth.isAdmin()">
@@ -44,7 +44,19 @@
         <div class="user-name">{{ auth.getUser()?.fullName }}</div>
         <div class="user-role">{{ auth.getUser()?.role }}</div>
         <button class="btn-logout" (click)="logout()">Sair</button>
-        <div class="app-version" *ngIf="appVersion">Versão {{ appVersion }}</div>
+        <div class="app-version-wrap" *ngIf="appVersion">
+          <div class="app-version">Versao {{ appVersion }}</div>
+          <button
+            class="btn-update"
+            *ngIf="updateAvailable || updateInProgress"
+            (click)="triggerManualUpdate()"
+            [disabled]="updateActionInProgress"
+            type="button"
+          >
+            {{ updateActionInProgress ? 'Atualizando...' : 'Atualizar' }}
+          </button>
+        </div>
+        <div class="app-update-status" *ngIf="updateStatusMessage">{{ updateStatusMessage }}</div>
       </div>
     </div>
   </div>

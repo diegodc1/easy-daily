@@ -67,6 +67,12 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
 .btn-logout    { display: block; margin-top: 8px; padding: 8px 14px; background: transparent; border: 1px solid var(--border); color: var(--text-muted); border-radius: 8px; font-size: 12px; cursor: pointer; width: 100%; text-align: left; transition: all .2s; }
 .btn-logout:hover { border-color: var(--danger); color: var(--danger); }
 .app-version   { margin-top: 8px; font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); }
+.app-version-wrap { margin-top: 8px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.app-version-wrap .app-version { margin-top: 0; }
+.btn-update { padding: 4px 10px; border-radius: 8px; border: 1px solid var(--accent); background: transparent; color: var(--accent); font-size: 11px; cursor: pointer; transition: all .2s; }
+.btn-update:hover { background: rgba(0, 163, 113, .1); }
+.btn-update:disabled { opacity: .6; cursor: not-allowed; }
+.app-update-status { margin-top: 6px; font-size: 11px; color: var(--text-muted); }
 
 /* ===== CARDS ===== */
 .card        { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; transition: background .25s, border-color .25s; }

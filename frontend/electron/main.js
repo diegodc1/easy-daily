@@ -9,9 +9,12 @@ let currentDateKey = getLocalDateKey(new Date());
 let nextNotificationTime = null;
 let reminderIntervalId = null;
 let updaterIntervalId = null;
-let isCheckingForMinimizeUpdate = false;
+let isCheckingForUpdate = false;
+let isDownloadingUpdate = false;
+let updateAvailable = false;
 let updateDownloaded = false;
 let shouldInstallAfterMinimize = false;
+let shouldInstallAfterManualTrigger = false;
 
 // Define o ícone antes de qualquer coisa ser criada
 const iconPath = path.join(__dirname, 'logo-daily.ico');
@@ -151,14 +154,23 @@ function startDailyReminderTimer() {
 function initAutoUpdater() {
   if (!app.isPackaged) return;
 
-  autoUpdater.autoDownload = true;
+  autoUpdater.autoDownload = false;
   autoUpdater.autoInstallOnAppQuit = true;
 
   autoUpdater.on('error', (error) => {
     console.error('[autoUpdater] error:', error?.message || error);
   });
 
+  autoUpdater.on('update-available', () => {
+    updateAvailable = true;
+  });
+
+  autoUpdater.on('update-not-available', () => {
+    updateAvailable = false;
+  });
+
   autoUpdater.on('update-downloaded', () => {
+    updateAvailable = true;
     updateDownloaded = true;
     const notification = new Notification({
       title: 'Atualizacao pronta',
@@ -166,20 +178,16 @@ function initAutoUpdater() {
     });
     notification.show();
 
-    if (shouldInstallAfterMinimize) {
+    if (shouldInstallAfterMinimize || shouldInstallAfterManualTrigger) {
       installDownloadedUpdate();
     }
   });
 
-  autoUpdater.checkForUpdates().catch((error) => {
-    console.error('[autoUpdater] check failed:', error?.message || error);
-  });
+  checkForUpdatesSafe('startup');
 
   if (!updaterIntervalId) {
     updaterIntervalId = setInterval(() => {
-      autoUpdater.checkForUpdates().catch((error) => {
-        console.error('[autoUpdater] periodic check failed:', error?.message || error);
-      });
+      checkForUpdatesSafe('periodic');
     }, 6 * 60 * 60 * 1000);
   }
 }
@@ -188,6 +196,47 @@ function installDownloadedUpdate() {
   if (!app.isPackaged || !updateDownloaded) return;
   app.isQuitting = true;
   autoUpdater.quitAndInstall(false, true);
+}
+
+async function checkForUpdatesSafe(source) {
+  if (!app.isPackaged) return false;
+  if (isCheckingForUpdate) return updateAvailable || updateDownloaded;
+  isCheckingForUpdate = true;
+
+  try {
+    const result = await autoUpdater.checkForUpdates();
+    const latestVersion = result?.updateInfo?.version;
+    if (latestVersion && latestVersion !== app.getVersion()) {
+      updateAvailable = true;
+    }
+  } catch (error) {
+    console.error(`[autoUpdater] ${source} check failed:`, error?.message || error);
+  } finally {
+    isCheckingForUpdate = false;
+  }
+
+  return updateAvailable || updateDownloaded;
+}
+
+async function downloadUpdateIfAvailable(source) {
+  if (!app.isPackaged) return false;
+  if (updateDownloaded || isDownloadingUpdate) return true;
+
+  if (!updateAvailable) {
+    const hasAvailableUpdate = await checkForUpdatesSafe(source);
+    if (!hasAvailableUpdate) return false;
+  }
+
+  isDownloadingUpdate = true;
+  try {
+    await autoUpdater.downloadUpdate();
+    return true;
+  } catch (error) {
+    console.error(`[autoUpdater] ${source} download failed:`, error?.message || error);
+    return false;
+  } finally {
+    isDownloadingUpdate = false;
+  }
 }
 
 function checkUpdatesOnMinimize() {
@@ -200,17 +249,7 @@ function checkUpdatesOnMinimize() {
     return;
   }
 
-  if (isCheckingForMinimizeUpdate) return;
-  isCheckingForMinimizeUpdate = true;
-
-  autoUpdater
-    .checkForUpdates()
-    .catch((error) => {
-      console.error('[autoUpdater] minimize check failed:', error?.message || error);
-    })
-    .finally(() => {
-      isCheckingForMinimizeUpdate = false;
-    });
+  downloadUpdateIfAvailable('minimize');
 }
 
 ipcMain.on('daily:done', () => {
@@ -223,6 +262,46 @@ ipcMain.on('daily:notDone', () => {
 
 ipcMain.handle('app:getVersion', () => {
   return app.getVersion();
+});
+
+ipcMain.handle('app:checkUpdateAvailability', async () => {
+  if (!app.isPackaged) {
+    return {
+      supported: false,
+      updateAvailable: false,
+      updateDownloaded: false,
+      updateInProgress: false,
+      currentVersion: app.getVersion(),
+      latestVersion: null,
+    };
+  }
+
+  await checkForUpdatesSafe('renderer-availability');
+
+  return {
+    supported: true,
+    updateAvailable: updateAvailable || updateDownloaded,
+    updateDownloaded,
+    updateInProgress: isDownloadingUpdate,
+    currentVersion: app.getVersion(),
+    latestVersion: null,
+  };
+});
+
+ipcMain.handle('app:startManualUpdate', async () => {
+  if (!app.isPackaged) {
+    return { started: false, reason: 'not-packaged' };
+  }
+
+  shouldInstallAfterManualTrigger = true;
+
+  if (updateDownloaded) {
+    installDownloadedUpdate();
+    return { started: true, downloaded: true };
+  }
+
+  const started = await downloadUpdateIfAvailable('manual');
+  return { started, downloaded: false };
 });
 
 if (!gotTheLock) {

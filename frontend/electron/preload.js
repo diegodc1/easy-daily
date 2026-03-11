@@ -26,5 +26,21 @@ contextBridge.exposeInMainWorld('dailyElectron', {
       return fallbackAppVersion;
     }
   },
+  checkUpdateAvailability: async () => {
+    try {
+      const info = await ipcRenderer.invoke('app:checkUpdateAvailability');
+      return info || { supported: false, updateAvailable: false, updateDownloaded: false, updateInProgress: false };
+    } catch {
+      return { supported: false, updateAvailable: false, updateDownloaded: false, updateInProgress: false };
+    }
+  },
+  startManualUpdate: async () => {
+    try {
+      const result = await ipcRenderer.invoke('app:startManualUpdate');
+      return result || { started: false };
+    } catch {
+      return { started: false };
+    }
+  },
 });
 

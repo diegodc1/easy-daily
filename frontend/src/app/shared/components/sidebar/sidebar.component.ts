@@ -16,11 +16,16 @@ import { notifyDailyDone, notifyDailyNotDone } from '../../../core/electron-help
 export class SidebarComponent implements OnInit {
   mobileMenuOpen = false;
   appVersion = '';
+  updateAvailable = false;
+  updateInProgress = false;
+  updateActionInProgress = false;
+  updateStatusMessage = '';
 
   constructor(public auth: AuthService, public theme: ThemeService, private dailyService: DailyService) {}
 
   ngOnInit(): void {
     this.syncTodayDailyStatusForElectron();
+    this.refreshUpdateAvailability();
 
     const getVersion = window.dailyElectron?.getAppVersion;
     if (getVersion) {
@@ -35,6 +40,47 @@ export class SidebarComponent implements OnInit {
     }
 
     this.loadWebVersion();
+  }
+
+  refreshUpdateAvailability(): void {
+    const checkUpdateAvailability = window.dailyElectron?.checkUpdateAvailability;
+    if (!checkUpdateAvailability) return;
+
+    checkUpdateAvailability()
+      .then(info => {
+        this.updateAvailable = !!info?.updateAvailable;
+        this.updateInProgress = !!info?.updateInProgress;
+      })
+      .catch(() => {
+        this.updateAvailable = false;
+        this.updateInProgress = false;
+      });
+  }
+
+  triggerManualUpdate(): void {
+    if (this.updateActionInProgress) return;
+    const startManualUpdate = window.dailyElectron?.startManualUpdate;
+    if (!startManualUpdate) return;
+
+    this.updateActionInProgress = true;
+    this.updateStatusMessage = '';
+
+    startManualUpdate()
+      .then(result => {
+        if (result?.started) {
+          this.updateStatusMessage = 'Atualizacao iniciada. O app sera reiniciado apos concluir.';
+          this.updateInProgress = true;
+          return;
+        }
+        this.updateStatusMessage = 'Nenhuma atualizacao nova disponivel.';
+        this.refreshUpdateAvailability();
+      })
+      .catch(() => {
+        this.updateStatusMessage = 'Falha ao iniciar atualizacao.';
+      })
+      .finally(() => {
+        this.updateActionInProgress = false;
+      });
   }
 
   private syncTodayDailyStatusForElectron(): void {
