@@ -22,9 +22,9 @@
     </div>
 
     <a class="nav-link" routerLink="/daily" routerLinkActive="active" (click)="closeMobileMenu()"><span class="nav-icon material-symbols-outlined">edit_note</span> Minha Daily</a>
-    <a class="nav-link" routerLink="/pre-daily" routerLinkActive="active" (click)="closeMobileMenu()"><span class="nav-icon material-symbols-outlined">checklist</span> Pre-Daily</a>
-    <a class="nav-link" routerLink="/notes" routerLinkActive="active" (click)="closeMobileMenu()"><span class="nav-icon material-symbols-outlined">sticky_note_2</span> Anotacoes</a>
-    <a class="nav-link" routerLink="/history" routerLinkActive="active" (click)="closeMobileMenu()"><span class="nav-icon material-symbols-outlined">history</span> Historico</a>
+    <a class="nav-link" routerLink="/pre-daily" routerLinkActive="active" (click)="closeMobileMenu()"><span class="nav-icon material-symbols-outlined">checklist</span> Pré-Daily</a>
+    <a class="nav-link" routerLink="/notes" routerLinkActive="active" (click)="closeMobileMenu()"><span class="nav-icon material-symbols-outlined">sticky_note_2</span> Anotações</a>
+    <a class="nav-link" routerLink="/history" routerLinkActive="active" (click)="closeMobileMenu()"><span class="nav-icon material-symbols-outlined">history</span> Histórico</a>
     <a class="nav-link" routerLink="/projects" routerLinkActive="active" (click)="closeMobileMenu()"><span class="nav-icon material-symbols-outlined">folder</span> Projetos</a>
 
     <ng-container *ngIf="auth.isAdmin()">
@@ -44,7 +44,7 @@
         <div class="user-name">{{ auth.getUser()?.fullName }}</div>
         <div class="user-role">{{ auth.getUser()?.role }}</div>
         <button class="btn-logout" (click)="logout()">Sair</button>
-        <div class="app-version" *ngIf="appVersion">Versao {{ appVersion }}</div>
+        <div class="app-version" *ngIf="appVersion">Versão {{ appVersion }}</div>
       </div>
     </div>
   </div>
