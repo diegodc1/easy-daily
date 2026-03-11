@@ -4,16 +4,19 @@ const path = require('path');
 let mainWindow;
 let tray;
 let dailyDoneToday = false;
-let currentDateKey = new Date().toISOString().slice(0, 10);
+let currentDateKey = getLocalDateKey(new Date());
 let nextNotificationTime = null;
-
-if (process.platform === 'win32') {
-  app.setAppUserModelId('com.daily.desktop');
-  startDailyReminderTimer();
-}
+let reminderIntervalId = null;
 
 // Define o ícone antes de qualquer coisa ser criada
 const iconPath = path.join(__dirname, 'logo-daily.ico');
+
+function getLocalDateKey(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -95,7 +98,7 @@ const gotTheLock = app.requestSingleInstanceLock();
 
 function resetDailyStateIfNeeded() {
   const now = new Date();
-  const todayKey = now.toISOString().slice(0, 10);
+  const todayKey = getLocalDateKey(now);
   if (todayKey !== currentDateKey) {
     currentDateKey = todayKey;
     dailyDoneToday = false;
@@ -109,7 +112,7 @@ function maybeNotifyPendingDaily() {
 
   const now = new Date();
   const minutesSinceMidnight = now.getHours() * 60 + now.getMinutes();
-  const startMinutes = 8 * 60 + 50;
+  const startMinutes = 8 * 60 + 30;
   if (minutesSinceMidnight < startMinutes) {
     return;
   }
@@ -119,7 +122,7 @@ function maybeNotifyPendingDaily() {
   }
 
   if (now >= nextNotificationTime) {
-    const minutes = 1;
+    const minutes = 10;
     const notification = new Notification({
       title: 'Daily pendente',
       body: 'Você ainda não preencheu sua daily de hoje. O Romane não vai gostar! 😡',
@@ -131,7 +134,8 @@ function maybeNotifyPendingDaily() {
 
 function startDailyReminderTimer() {
   if (process.platform !== 'win32') return;
-  setInterval(maybeNotifyPendingDaily, 60 * 1000);
+  if (reminderIntervalId) return;
+  reminderIntervalId = setInterval(maybeNotifyPendingDaily, 60 * 1000);
 }
 
 ipcMain.on('daily:done', () => {
