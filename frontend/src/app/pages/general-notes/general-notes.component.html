@@ -1,7 +1,7 @@
 <div class="fade-in notes-page">
   <div class="page-header">
     <div>
-      <div class="page-title">Anotações Gerais</div>
+      <div class="page-title">Anotacoes Gerais</div>
       <div class="page-subtitle">Post-its por projeto para registrar observacoes importantes</div>
     </div>
   </div>
@@ -11,7 +11,14 @@
 
   <div class="card" style="margin-bottom:20px">
     <div class="card-title" style="margin-bottom:16px">Nova anotacao</div>
-    <div class="notes-create-grid" style="display:grid;grid-template-columns:220px 180px 220px 1fr auto;gap:10px;align-items:end">
+    <div class="notes-create-grid" style="display:grid;grid-template-columns:180px 220px 180px 220px 1fr auto;gap:10px;align-items:end">
+      <div>
+        <label class="form-label">Tipo</label>
+        <select class="form-control" [(ngModel)]="newNote.noteType" [ngModelOptions]="{standalone: true}" (ngModelChange)="onNewNoteTypeChange()">
+          <option value="TEXT">Texto livre</option>
+          <option value="TODO">To-do list</option>
+        </select>
+      </div>
       <div>
         <label class="form-label">Projeto</label>
         <select class="form-control" [(ngModel)]="newNote.projectName" [ngModelOptions]="{standalone: true}">
@@ -28,13 +35,29 @@
         <input class="form-control" [(ngModel)]="newNote.title" [ngModelOptions]="{standalone: true}" placeholder="Opcional">
       </div>
       <div>
-        <label class="form-label">Texto *</label>
-        <input class="form-control" [(ngModel)]="newNote.noteText" [ngModelOptions]="{standalone: true}" placeholder="Escreva sua anotacao">
+        <label class="form-label">{{ newNote.noteType === 'TODO' ? 'Descricao (opcional)' : 'Texto *' }}</label>
+        <input class="form-control" [(ngModel)]="newNote.noteText" [ngModelOptions]="{standalone: true}" [placeholder]="newNote.noteType === 'TODO' ? 'Ex.: Pendencias do projeto' : 'Escreva sua anotacao'">
       </div>
       <button class="btn btn-primary" type="button" (click)="addNote()" [disabled]="saving">
         <span class="spinner" *ngIf="saving"></span>
         {{ saving ? 'Salvando...' : 'Adicionar' }}
       </button>
+    </div>
+
+    <div *ngIf="newNote.noteType === 'TODO'" style="margin-top:12px;display:grid;gap:10px">
+      <div>
+        <label class="form-label">Tarefas (uma por linha)</label>
+        <textarea
+          class="form-control todo-bulk-area"
+          [(ngModel)]="newTodoBulkText"
+          [ngModelOptions]="{standalone: true}"
+          placeholder="- Revisar PR do modulo X&#10;- Ajustar endpoint de login&#10;- Testar ambiente de homologacao"></textarea>
+        <div class="todo-bulk-hint">Linhas vazias sao ignoradas. Total atual: {{ getTodoDraftCount(newTodoBulkText) }} tarefa(s).</div>
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;color:var(--text-muted);font-size:13px">
+        <input type="checkbox" [(ngModel)]="newNote.sendFinishedToPreDaily" [ngModelOptions]="{standalone: true}">
+        Enviar tarefa concluida para a pagina de pre-daily
+      </label>
     </div>
   </div>
 
@@ -61,30 +84,68 @@
   </div>
 
   <div class="postit-grid" *ngIf="filteredNotes.length > 0">
-    <div class="postit-card" *ngFor="let note of filteredNotes" [class.postit-finished]="note.finished">
+    <div
+      class="postit-card"
+      *ngFor="let note of filteredNotes"
+      [class.postit-finished]="note.finished"
+      [class.postit-moving]="isPostItMoving(note)"
+      (dragover)="onPostItCardDragOver($event)"
+      (drop)="onPostItCardDrop(note, $event)">
       <ng-container *ngIf="editingId !== note.id; else editMode">
-          <div class="postit-top">
-              <div style="width: 100%; display:flex;justify-content: space-between">
-                  <span class="postit-project">{{ note.projectName || 'Geral' }}</span>
-              </div>
-              <span class="postit-protocol" *ngIf="note.protocol">{{ note.protocol }}</span>
+        <div class="postit-top">
+          <div style="width:100%;display:flex;justify-content:space-between">
+            <div style="display:flex;align-items:center;gap:6px;min-width:0">
+              <button
+                class="postit-move-handle"
+                type="button"
+                draggable="true"
+                (dragstart)="onPostItCardDragStart(note, $event)"
+                (dragend)="onPostItCardDragEnd()"
+                title="Mover post-it">
+                <span class="material-symbols-outlined">open_with</span>
+              </button>
+              <span class="postit-project">{{ note.projectName || 'Geral' }}</span>
+            </div>
+            <span class="postit-todo-progress" *ngIf="isTodo(note)">{{ getTodoCompletionLabel(note) }}</span>
           </div>
-          <span class="postit-title" *ngIf="note.title" style="font-weight:700;font-size:14px;margin-bottom:2px">{{ note.title }}</span>
-          <div class="postit-text" [class.postit-text-truncated]="isNoteTextLarge(note)">
-            {{ isNoteTextLarge(note) ? (note.noteText.substring(0, 200) + '...') : note.noteText }}
-          </div>
-          <div *ngIf="isNoteTextLarge(note)" style="margin-top:8px">
-            <button class="btn btn-link btn-view-more" type="button" (click)="openNoteModal(note)" title="Ver anotacao completa">
-              Ver mais →
-            </button>
-          </div>
+          <span class="postit-protocol" *ngIf="note.protocol">{{ note.protocol }}</span>
+        </div>
+        <span class="postit-title" *ngIf="note.title" style="font-weight:700;font-size:14px;margin-bottom:2px">{{ note.title }}</span>
+
+        <div class="postit-text" *ngIf="!isTodo(note)" [class.postit-text-truncated]="isNoteTextLarge(note)">
+          {{ isNoteTextLarge(note) ? (note.noteText.substring(0, 200) + '...') : note.noteText }}
+        </div>
+
+        <div *ngIf="isTodo(note) && note.noteText" style="font-size:12px;margin-bottom:8px;color:rgba(70,56,0,.85)">
+          {{ note.noteText }}
+        </div>
+        <div class="postit-todo-list" *ngIf="isTodo(note)">
+          <label
+            class="postit-todo-item postit-todo-item-draggable"
+            *ngFor="let item of getTodoItems(note); let idx = index"
+            draggable="true"
+            (dragstart)="onTodoDragStart(note, idx, $event)"
+            (dragover)="onTodoDragOver($event)"
+            (drop)="onTodoDrop(note, idx, $event)"
+            (dragend)="onTodoDragEnd()">
+            <span class="material-symbols-outlined postit-drag-handle">drag_indicator</span>
+            <input class="postit-todo-checkbox" type="checkbox" [checked]="item.finished" (change)="toggleTodoItem(note, item, $any($event.target).checked, idx)">
+            <span [class.postit-todo-item-finished]="item.finished">{{ item.text }}</span>
+          </label>
+        </div>
+
+        <div *ngIf="isNoteTextLarge(note)" style="margin-top:8px">
+          <button class="btn btn-link btn-view-more" type="button" (click)="openNoteModal(note)" title="Ver anotacao completa">
+            Ver mais ->
+          </button>
+        </div>
         <div class="postit-footer">
           <span>{{ formatDate(note.updatedAt || note.createdAt) }}</span>
-          <div style="display:flex;gap:3px; align-items: end">
+          <div style="display:flex;gap:3px;align-items:end">
             <button class="btn btn-sm icon-btn icon-btn-sm btn-edit-icon" type="button" (click)="startEdit(note)" title="Editar anotacao">
               <span class="material-symbols-outlined">edit</span>
             </button>
-            <button class="btn btn-sm icon-btn icon-btn-sm btn-finish-icon" type="button" (click)="toggleFinished(note)" [title]="note.finished ? 'Reabrir anotacao' : 'Finalizar anotacao'">
+            <button *ngIf="!isTodo(note)" class="btn btn-sm icon-btn icon-btn-sm btn-finish-icon" type="button" (click)="toggleFinished(note)" [title]="note.finished ? 'Reabrir anotacao' : 'Finalizar anotacao'">
               <span class="material-symbols-outlined">{{ note.finished ? 'undo' : 'task_alt' }}</span>
             </button>
             <button class="btn btn-delete-icon btn-sm icon-btn icon-btn-sm" type="button" (click)="deleteNote(note)" title="Remover anotacao">
@@ -96,13 +157,36 @@
 
       <ng-template #editMode>
         <div style="display:grid;gap:8px">
+          <select class="form-control" [(ngModel)]="editDraft.noteType" [ngModelOptions]="{standalone: true}" (ngModelChange)="onEditNoteTypeChange()">
+            <option value="TEXT">Texto livre</option>
+            <option value="TODO">To-do list</option>
+          </select>
           <select class="form-control" [(ngModel)]="editDraft.projectName" [ngModelOptions]="{standalone: true}">
             <option value="">Geral</option>
             <option *ngFor="let p of projects" [value]="p.name">{{ p.name }}</option>
           </select>
           <input class="form-control" [(ngModel)]="editDraft.protocol" [ngModelOptions]="{standalone: true}" placeholder="Protocolo (opcional)">
           <input class="form-control" [(ngModel)]="editDraft.title" [ngModelOptions]="{standalone: true}" placeholder="Titulo (opcional)">
-          <textarea class="form-control" rows="5" [(ngModel)]="editDraft.noteText" [ngModelOptions]="{standalone: true}" placeholder="Texto da anotacao"></textarea>
+
+          <textarea *ngIf="editDraft.noteType !== 'TODO'" class="form-control" rows="5" [(ngModel)]="editDraft.noteText" [ngModelOptions]="{standalone: true}" placeholder="Texto da anotacao"></textarea>
+
+          <div *ngIf="editDraft.noteType === 'TODO'" style="display:grid;gap:8px">
+            <input class="form-control" [(ngModel)]="editDraft.noteText" [ngModelOptions]="{standalone: true}" placeholder="Descricao (opcional)">
+            <div>
+              <label class="form-label">Tarefas (uma por linha)</label>
+              <textarea
+                class="form-control todo-bulk-area"
+                [(ngModel)]="editTodoBulkText"
+                [ngModelOptions]="{standalone: true}"
+                placeholder="- Revisar PR do modulo X&#10;- Ajustar endpoint de login&#10;- Testar ambiente de homologacao"></textarea>
+              <div class="todo-bulk-hint">Total atual: {{ getTodoDraftCount(editTodoBulkText) }} tarefa(s).</div>
+            </div>
+            <label style="display:flex;align-items:center;gap:8px;color:var(--text-muted);font-size:13px">
+              <input type="checkbox" [(ngModel)]="editDraft.sendFinishedToPreDaily" [ngModelOptions]="{standalone: true}">
+              Enviar tarefa concluida para a pagina de pre-daily
+            </label>
+          </div>
+
           <div style="display:flex;gap:8px;justify-content:flex-end">
             <button class="btn btn-secondary btn-sm" type="button" (click)="cancelEdit()" [disabled]="editSaving">Cancelar</button>
             <button class="btn btn-primary btn-sm" type="button" (click)="saveEdit(note)" [disabled]="editSaving">
@@ -119,7 +203,7 @@
     <div class="modal" (click)="$event.stopPropagation()">
       <div class="modal-title">
         Excluir Anotacao
-        <button class="modal-close" type="button" (click)="closeDeleteModal()">×</button>
+        <button class="modal-close" type="button" (click)="closeDeleteModal()">x</button>
       </div>
       <div style="font-size:14px;color:var(--text);margin-bottom:18px">
         Deseja realmente excluir esta anotacao?
@@ -138,7 +222,7 @@
     <div class="modal modal-note" (click)="$event.stopPropagation()">
       <div class="modal-title">
         Anotacao Completa
-        <button class="modal-close" type="button" (click)="closeNoteModal()">×</button>
+        <button class="modal-close" type="button" (click)="closeNoteModal()">x</button>
       </div>
       <div *ngIf="selectedNote" style="display:grid;gap:12px">
         <div>
@@ -153,10 +237,30 @@
           <label class="form-label" style="color:var(--text-muted);font-size:12px;font-weight:600">TITULO</label>
           <div style="font-size:14px;font-weight:500">{{ selectedNote.title }}</div>
         </div>
-        <div>
+
+        <div *ngIf="selectedNote.noteType !== 'TODO'">
           <label class="form-label" style="color:var(--text-muted);font-size:12px;font-weight:600">ANOTACAO</label>
           <div style="font-size:14px;line-height:1.6;white-space:pre-wrap;word-wrap:break-word;word-break:break-word;overflow-wrap:break-word">{{ selectedNote.noteText }}</div>
         </div>
+        <div *ngIf="selectedNote.noteType === 'TODO'" style="display:grid;gap:8px">
+          <label class="form-label" style="color:var(--text-muted);font-size:12px;font-weight:600">TO-DO</label>
+          <div *ngIf="selectedNote.noteText" style="font-size:13px;color:var(--text-muted)">{{ selectedNote.noteText }}</div>
+          <div class="postit-todo-list">
+            <label
+              class="postit-todo-item postit-todo-item-draggable"
+              *ngFor="let item of getTodoItems(selectedNote); let idx = index"
+              draggable="true"
+              (dragstart)="onTodoDragStart(selectedNote, idx, $event)"
+              (dragover)="onTodoDragOver($event)"
+              (drop)="onTodoDrop(selectedNote, idx, $event)"
+              (dragend)="onTodoDragEnd()">
+              <span class="material-symbols-outlined postit-drag-handle">drag_indicator</span>
+              <input class="postit-todo-checkbox" type="checkbox" [checked]="item.finished" (change)="toggleTodoItem(selectedNote, item, $any($event.target).checked, idx)">
+              <span [class.postit-todo-item-finished]="item.finished">{{ item.text }}</span>
+            </label>
+          </div>
+        </div>
+
         <div style="border-top:1px solid var(--border);padding-top:12px;color:var(--text-muted);font-size:12px">
           Atualizado em {{ formatDate(selectedNote.updatedAt || selectedNote.createdAt) }}
         </div>

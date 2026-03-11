@@ -60,6 +60,9 @@ public class DataInitializer implements CommandLineRunner {
                     protocol VARCHAR(100),
                     title VARCHAR(200),
                     note_text TEXT NOT NULL,
+                    note_type VARCHAR(20) NOT NULL DEFAULT 'TEXT',
+                    todo_items_json TEXT,
+                    send_finished_to_pre_daily BOOLEAN NOT NULL DEFAULT FALSE,
                     finished BOOLEAN NOT NULL DEFAULT FALSE,
                     created_at TIMESTAMP(6) NOT NULL DEFAULT NOW(),
                     updated_at TIMESTAMP(6) NOT NULL DEFAULT NOW()
@@ -68,6 +71,39 @@ public class DataInitializer implements CommandLineRunner {
 
             jdbcTemplate.execute("ALTER TABLE general_notes ADD COLUMN IF NOT EXISTS finished BOOLEAN NOT NULL DEFAULT FALSE");
             jdbcTemplate.execute("ALTER TABLE general_notes ADD COLUMN IF NOT EXISTS title VARCHAR(200)");
+            jdbcTemplate.execute("ALTER TABLE general_notes ADD COLUMN IF NOT EXISTS note_type VARCHAR(20) NOT NULL DEFAULT 'TEXT'");
+            jdbcTemplate.execute("ALTER TABLE general_notes ADD COLUMN IF NOT EXISTS todo_items_json TEXT");
+            jdbcTemplate.execute("ALTER TABLE general_notes ADD COLUMN IF NOT EXISTS send_finished_to_pre_daily BOOLEAN NOT NULL DEFAULT FALSE");
+            jdbcTemplate.execute("""
+                DO $$
+                BEGIN
+                    IF EXISTS (
+                        SELECT 1
+                        FROM information_schema.table_constraints
+                        WHERE table_name = 'general_notes'
+                          AND constraint_type = 'CHECK'
+                          AND constraint_name = 'general_notes_note_type_check'
+                    ) THEN
+                        ALTER TABLE general_notes DROP CONSTRAINT general_notes_note_type_check;
+                    END IF;
+                END $$;
+                """);
+            jdbcTemplate.execute("""
+                UPDATE general_notes
+                SET note_type = CASE
+                    WHEN note_type IS NULL OR BTRIM(note_type) = '' THEN 'TEXT'
+                    WHEN UPPER(note_type) IN ('TEXT', 'TODO') THEN UPPER(note_type)
+                    ELSE 'TEXT'
+                END
+                """);
+            jdbcTemplate.execute("""
+                DO $$
+                BEGIN
+                    ALTER TABLE general_notes
+                    ADD CONSTRAINT general_notes_note_type_check
+                    CHECK (UPPER(note_type) IN ('TEXT', 'TODO'));
+                END $$;
+                """);
 
             jdbcTemplate.execute("""
                 DO $$

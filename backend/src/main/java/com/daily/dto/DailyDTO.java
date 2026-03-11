@@ -169,7 +169,17 @@ public class DailyDTO {
         @Size(max = 100) private String projectName;
         @Size(max = 100) private String protocol;
         @Size(max = 200) private String title;
-        @NotBlank @Size(max = 5000) private String noteText;
+        @Size(max = 5000) private String noteText;
+        @Pattern(regexp = "TEXT|TODO") private String noteType;
+        private Boolean sendFinishedToPreDaily;
+        private List<GeneralNoteTodoItemRequest> todoItems;
+    }
+
+    @Data public static class GeneralNoteTodoItemRequest {
+        @Size(max = 80) private String id;
+        @NotBlank @Size(max = 500) private String text;
+        private Boolean finished;
+        private Boolean sentToPreDaily;
     }
 
     @Data public static class GeneralNoteResponse {
@@ -178,9 +188,19 @@ public class DailyDTO {
         private String protocol;
         private String title;
         private String noteText;
+        private String noteType;
+        private boolean sendFinishedToPreDaily;
+        private List<GeneralNoteTodoItemResponse> todoItems;
         private boolean finished;
         private String createdAt;
         private String updatedAt;
+    }
+
+    @Data public static class GeneralNoteTodoItemResponse {
+        private String id;
+        private String text;
+        private boolean finished;
+        private boolean sentToPreDaily;
     }
 
     @Data public static class GeneralNoteFinishRequest {

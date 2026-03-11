@@ -125,7 +125,17 @@ export interface GeneralNote {
   protocol?: string | null;
   title?: string | null;
   noteText: string;
+  noteType?: 'TEXT' | 'TODO';
+  sendFinishedToPreDaily?: boolean;
+  todoItems?: GeneralNoteTodoItem[];
   finished?: boolean;
   createdAt?: string;
   updatedAt?: string;
+}
+
+export interface GeneralNoteTodoItem {
+  id?: string;
+  text: string;
+  finished?: boolean;
+  sentToPreDaily?: boolean;
 }

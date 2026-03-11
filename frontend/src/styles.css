@@ -340,14 +340,83 @@ select.form-control option { background: var(--surface); color: var(--text); }
   display: flex;
   flex-direction: column;
   box-shadow: 0 8px 20px rgba(0,0,0,.16);
+  position: relative;
+  transition: box-shadow .18s ease;
 }
+.postit-moving { z-index: 50; box-shadow: 0 14px 30px rgba(0,0,0,.28); }
 .postit-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
 .postit-project { font-weight: 700; font-size: 13px; background: rgba(255,255,255,.45); border: 1px solid rgba(0,0,0,.08); border-radius: 12px; padding: 2px 10px; }
+.postit-move-handle {
+  width: 24px;
+  height: 24px;
+  border: 1px solid rgba(0,0,0,.14);
+  background: rgba(255,255,255,.45);
+  color: rgba(70,56,0,.8);
+  border-radius: 7px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  padding: 0;
+  flex-shrink: 0;
+}
+.postit-move-handle:active { cursor: grabbing; }
+.postit-move-handle .material-symbols-outlined { font-size: 16px; line-height: 1; }
 .postit-protocol { font-family: var(--font-mono); font-size: 12px; color: #6a5600; background: rgba(255,255,255,.35); border-radius: 10px; padding: 2px 8px; }
 .postit-text { white-space: pre-wrap; word-break: break-word; flex: 1; font-size: 14px; line-height: 1.45; margin-bottom: 12px; }
 .postit-text-truncated { display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical; overflow: hidden; }
 .postit-footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 11px; color: rgba(70,56,0,.8); }
 .postit-finished { opacity: .45; filter: grayscale(.2); }
+.postit-todo-progress {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  background: rgba(255,255,255,.45);
+  border: 1px solid rgba(0,0,0,.08);
+  border-radius: 10px;
+  padding: 1px 8px;
+}
+.postit-todo-list { display: grid; gap: 6px; margin-bottom: 10px; }
+.postit-todo-item { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; cursor: pointer; }
+.postit-todo-item input { margin-top: 2px; }
+.postit-todo-checkbox {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid rgba(70,56,0,.55);
+  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all .18s ease;
+  position: relative;
+}
+.postit-todo-checkbox:hover { border-color: rgba(70,56,0,.8); }
+.postit-todo-checkbox:checked {
+  border-color: #22c55e;
+  background: rgba(34,197,94,.12);
+}
+.postit-todo-checkbox:checked::after {
+  content: 'check';
+  font-family: 'Material Symbols Outlined';
+  font-size: 14px;
+  line-height: 1;
+  color: #16a34a;
+  font-variation-settings: 'FILL' 1, 'wght' 700, 'GRAD' 0, 'opsz' 20;
+}
+.postit-todo-item-finished { text-decoration: line-through; opacity: .7; }
+.postit-todo-item-draggable { cursor: grab; user-select: none; }
+.postit-todo-item-draggable:active { cursor: grabbing; }
+.postit-drag-handle {
+  font-size: 16px;
+  line-height: 1;
+  color: rgba(70,56,0,.6);
+  margin-top: 2px;
+}
+.todo-bulk-area { min-height: 130px; font-family: var(--font-body); line-height: 1.45; }
+.todo-bulk-hint { margin-top: 6px; font-size: 12px; color: var(--text-muted); }
 .icon-btn { width: 34px; height: 34px; padding: 0; justify-content: center; }
 .icon-btn-sm { width: 28px; height: 28px; }
 .icon-btn .material-symbols-outlined {
@@ -569,6 +638,7 @@ select.form-control option { background: var(--surface); color: var(--text); }
   .notes-page .notes-create-grid { grid-template-columns: 1fr !important; }
   .notes-page .notes-create-grid > button { width: 100%; }
   .notes-page .notes-filter-bar > * { min-width: 0 !important; }
+  .notes-page .todo-bulk-area { min-height: 120px; }
 
   /* Overrides para blocos com inline style que quebram no mobile */
   div[style*="grid-template-columns:1.7fr 1fr"] { grid-template-columns: 1fr !important; }

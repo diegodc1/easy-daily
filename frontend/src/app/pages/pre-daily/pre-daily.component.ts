@@ -52,7 +52,7 @@ export class PreDailyComponent implements OnInit {
   }
 
   get visibleProjectBlocks(): string[] {
-    return this.projectBlocks.filter(name => this.isVisibleProjectName(name));
+    return this.projectBlocks;
   }
 
   addProjectBlock() {

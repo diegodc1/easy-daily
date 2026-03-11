@@ -34,6 +34,15 @@ public class GeneralNote {
     @Column(name = "note_text", nullable = false, columnDefinition = "TEXT")
     private String noteText;
 
+    @Column(name = "note_type", nullable = false, length = 20)
+    private String noteType = "TEXT";
+
+    @Column(name = "todo_items_json", columnDefinition = "TEXT")
+    private String todoItemsJson;
+
+    @Column(name = "send_finished_to_pre_daily", nullable = false)
+    private boolean sendFinishedToPreDaily = false;
+
     @Column(name = "finished", nullable = false)
     private boolean finished = false;
 

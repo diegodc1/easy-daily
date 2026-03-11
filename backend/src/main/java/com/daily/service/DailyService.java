@@ -1,6 +1,7 @@
 package com.daily.service;
 
 import com.daily.dto.DailyDTO.*;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.daily.entity.*;
 import com.daily.repository.*;
 import lombok.RequiredArgsConstructor;
@@ -19,12 +20,16 @@ import java.util.stream.Collectors;
 
 @Service @RequiredArgsConstructor
 public class DailyService {
+    private static final String NOTE_TYPE_TEXT = "TEXT";
+    private static final String NOTE_TYPE_TODO = "TODO";
+
     private final DailyRepository   dailyRepository;
     private final UserRepository    userRepository;
     private final ProjectRepository projectRepository;
     private final DailyEditRequestRepository dailyEditRequestRepository;
     private final PreDailyRepository preDailyRepository;
     private final GeneralNoteRepository generalNoteRepository;
+    private final ObjectMapper objectMapper;
 
     @Transactional
     public DailyResponse saveOrUpdate(User user, DailyRequest req) {
@@ -153,7 +158,32 @@ public class DailyService {
         note.setProjectName(normalizeProjectName(req.getProjectName()));
         note.setProtocol(cleanProtocol(req.getProtocol()));
         note.setTitle(cleanTitle(req.getTitle()));
-        note.setNoteText(req.getNoteText().trim());
+        String noteType = resolveNoteType(req.getNoteType(), req.getTodoItems());
+        note.setNoteType(noteType);
+
+        Map<String, Boolean> emptySentMap = Collections.emptyMap();
+        List<TodoItemState> todoItems = sanitizeTodoItems(req.getTodoItems(), emptySentMap, noteType);
+        boolean sendFinishedToPreDaily = NOTE_TYPE_TODO.equals(noteType) && Boolean.TRUE.equals(req.getSendFinishedToPreDaily());
+        note.setSendFinishedToPreDaily(sendFinishedToPreDaily);
+
+        if (NOTE_TYPE_TODO.equals(noteType) && todoItems.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A lista de tarefas nao pode estar vazia.");
+        }
+
+        if (sendFinishedToPreDaily) {
+            List<TodoItemState> finishedItems = todoItems.stream()
+                .filter(TodoItemState::isFinished)
+                .filter(item -> !item.isSentToPreDaily())
+                .collect(Collectors.toList());
+            pushFinishedTodoItemsToPreDaily(user, note.getProjectName(), finishedItems);
+            finishedItems.forEach(item -> item.setSentToPreDaily(true));
+        }
+
+        note.setTodoItemsJson(serializeTodoItems(todoItems));
+        note.setNoteText(sanitizeNoteText(req.getNoteText(), noteType));
+        if (NOTE_TYPE_TODO.equals(noteType)) {
+            note.setFinished(!todoItems.isEmpty() && todoItems.stream().allMatch(TodoItemState::isFinished));
+        }
         return toGeneralNoteResponse(generalNoteRepository.save(note));
     }
 
@@ -161,10 +191,67 @@ public class DailyService {
     public GeneralNoteResponse updateGeneralNote(User user, Long id, GeneralNoteRequest req) {
         GeneralNote note = generalNoteRepository.findByIdAndUser(id, user)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Anotacao nao encontrada."));
+
+        List<TodoItemState> previousTodoItems = readTodoItems(note.getTodoItemsJson());
+        Map<String, Boolean> previousFinishedMap = previousTodoItems.stream()
+            .collect(Collectors.toMap(TodoItemState::getId, TodoItemState::isFinished, (a, b) -> b));
+        Map<String, Boolean> previousSentMap = previousTodoItems.stream()
+            .collect(Collectors.toMap(TodoItemState::getId, TodoItemState::isSentToPreDaily, (a, b) -> b));
+
+        String noteType = resolveNoteType(req.getNoteType(), req.getTodoItems());
         note.setProjectName(normalizeProjectName(req.getProjectName()));
         note.setProtocol(cleanProtocol(req.getProtocol()));
         note.setTitle(cleanTitle(req.getTitle()));
-        note.setNoteText(req.getNoteText().trim());
+        note.setNoteType(noteType);
+        note.setNoteText(sanitizeNoteText(req.getNoteText(), noteType));
+
+        if (NOTE_TYPE_TODO.equals(noteType)) {
+            List<TodoItemState> todoItems = sanitizeTodoItems(req.getTodoItems(), previousSentMap, noteType);
+            if (todoItems.isEmpty()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A lista de tarefas nao pode estar vazia.");
+            }
+
+            boolean sendFinishedToPreDaily = Boolean.TRUE.equals(req.getSendFinishedToPreDaily());
+            note.setSendFinishedToPreDaily(sendFinishedToPreDaily);
+
+            if (sendFinishedToPreDaily) {
+                List<TodoItemState> finishedToPush = todoItems.stream()
+                    .filter(TodoItemState::isFinished)
+                    .collect(Collectors.toList());
+                pushFinishedTodoItemsToPreDaily(user, note.getProjectName(), finishedToPush);
+                finishedToPush.forEach(item -> item.setSentToPreDaily(true));
+                List<TodoItemState> uncheckedToRemove = todoItems.stream()
+                    .filter(item -> !item.isFinished())
+                    .filter(TodoItemState::isSentToPreDaily)
+                    .collect(Collectors.toList());
+                removeTodoItemsFromPreDaily(user, note.getProjectName(), uncheckedToRemove);
+                uncheckedToRemove.forEach(item -> item.setSentToPreDaily(false));
+            } else {
+                List<TodoItemState> sentItemsToRemove = todoItems.stream()
+                    .filter(TodoItemState::isSentToPreDaily)
+                    .collect(Collectors.toList());
+                removeTodoItemsFromPreDaily(user, note.getProjectName(), sentItemsToRemove);
+                sentItemsToRemove.forEach(item -> item.setSentToPreDaily(false));
+            }
+
+            List<TodoItemState> deletedItemsToRemove = previousTodoItems.stream()
+                .filter(TodoItemState::isFinished)
+                .filter(TodoItemState::isSentToPreDaily)
+                .filter(previous -> todoItems.stream().noneMatch(current -> Objects.equals(current.getId(), previous.getId())))
+                .collect(Collectors.toList());
+            removeTodoItemsFromPreDaily(user, note.getProjectName(), deletedItemsToRemove);
+
+            note.setTodoItemsJson(serializeTodoItems(todoItems));
+            note.setFinished(!todoItems.isEmpty() && todoItems.stream().allMatch(TodoItemState::isFinished));
+        } else {
+            List<TodoItemState> sentFinishedItems = previousTodoItems.stream()
+                .filter(TodoItemState::isFinished)
+                .filter(TodoItemState::isSentToPreDaily)
+                .collect(Collectors.toList());
+            removeTodoItemsFromPreDaily(user, note.getProjectName(), sentFinishedItems);
+            note.setTodoItemsJson(serializeTodoItems(Collections.emptyList()));
+            note.setSendFinishedToPreDaily(false);
+        }
         return toGeneralNoteResponse(generalNoteRepository.save(note));
     }
 
@@ -172,7 +259,26 @@ public class DailyService {
     public GeneralNoteResponse setGeneralNoteFinished(User user, Long id, boolean finished) {
         GeneralNote note = generalNoteRepository.findByIdAndUser(id, user)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Anotacao nao encontrada."));
-        note.setFinished(finished);
+        if (NOTE_TYPE_TODO.equals(note.getNoteType())) {
+            List<TodoItemState> todoItems = readTodoItems(note.getTodoItemsJson());
+            todoItems.forEach(item -> item.setFinished(finished));
+
+            if (finished && note.isSendFinishedToPreDaily()) {
+                pushFinishedTodoItemsToPreDaily(user, note.getProjectName(), todoItems);
+                todoItems.forEach(item -> item.setSentToPreDaily(true));
+            } else if (!finished) {
+                List<TodoItemState> itemsToRemove = todoItems.stream()
+                    .filter(TodoItemState::isSentToPreDaily)
+                    .collect(Collectors.toList());
+                removeTodoItemsFromPreDaily(user, note.getProjectName(), itemsToRemove);
+                itemsToRemove.forEach(item -> item.setSentToPreDaily(false));
+            }
+
+            note.setTodoItemsJson(serializeTodoItems(todoItems));
+            note.setFinished(finished && !todoItems.isEmpty());
+        } else {
+            note.setFinished(finished);
+        }
         return toGeneralNoteResponse(generalNoteRepository.save(note));
     }
 
@@ -549,10 +655,174 @@ public class DailyService {
         response.setProtocol(note.getProtocol());
         response.setTitle(note.getTitle());
         response.setNoteText(note.getNoteText());
+        response.setNoteType(note.getNoteType() != null ? note.getNoteType() : NOTE_TYPE_TEXT);
+        response.setSendFinishedToPreDaily(note.isSendFinishedToPreDaily());
+        response.setTodoItems(readTodoItems(note.getTodoItemsJson()).stream().map(item -> {
+            GeneralNoteTodoItemResponse todoItemResponse = new GeneralNoteTodoItemResponse();
+            todoItemResponse.setId(item.getId());
+            todoItemResponse.setText(item.getText());
+            todoItemResponse.setFinished(item.isFinished());
+            todoItemResponse.setSentToPreDaily(item.isSentToPreDaily());
+            return todoItemResponse;
+        }).collect(Collectors.toList()));
         response.setFinished(note.isFinished());
         response.setCreatedAt(note.getCreatedAt() != null ? note.getCreatedAt().toString() : null);
         response.setUpdatedAt(note.getUpdatedAt() != null ? note.getUpdatedAt().toString() : null);
         return response;
+    }
+
+    private String resolveNoteType(String requestedType, List<GeneralNoteTodoItemRequest> todoItems) {
+        if (requestedType != null && NOTE_TYPE_TODO.equalsIgnoreCase(requestedType.trim())) {
+            return NOTE_TYPE_TODO;
+        }
+        if (requestedType != null && NOTE_TYPE_TEXT.equalsIgnoreCase(requestedType.trim())) {
+            return NOTE_TYPE_TEXT;
+        }
+        return todoItems != null && !todoItems.isEmpty() ? NOTE_TYPE_TODO : NOTE_TYPE_TEXT;
+    }
+
+    private String sanitizeNoteText(String noteText, String noteType) {
+        String sanitized = noteText == null ? "" : noteText.trim();
+        if (NOTE_TYPE_TODO.equals(noteType)) {
+            return sanitized.isEmpty() ? "Lista de tarefas" : sanitized;
+        }
+        if (sanitized.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Texto da anotacao e obrigatorio.");
+        }
+        return sanitized;
+    }
+
+    private List<TodoItemState> sanitizeTodoItems(
+        List<GeneralNoteTodoItemRequest> incomingItems,
+        Map<String, Boolean> previousSentMap,
+        String noteType
+    ) {
+        if (!NOTE_TYPE_TODO.equals(noteType)) {
+            return Collections.emptyList();
+        }
+        if (incomingItems == null) {
+            return Collections.emptyList();
+        }
+
+        List<TodoItemState> sanitized = new ArrayList<>();
+        Set<String> usedIds = new HashSet<>();
+        for (GeneralNoteTodoItemRequest raw : incomingItems) {
+            if (raw == null) continue;
+            String text = raw.getText() != null ? raw.getText().trim() : "";
+            if (text.isEmpty()) continue;
+
+            String candidateId = raw.getId() != null ? raw.getId().trim() : "";
+            if (candidateId.isEmpty()) {
+                candidateId = UUID.randomUUID().toString();
+            }
+            if (usedIds.contains(candidateId)) {
+                continue;
+            }
+            usedIds.add(candidateId);
+
+            TodoItemState state = new TodoItemState();
+            state.setId(candidateId);
+            state.setText(text);
+            state.setFinished(Boolean.TRUE.equals(raw.getFinished()));
+            boolean sentFromRequest = Boolean.TRUE.equals(raw.getSentToPreDaily());
+            boolean sentFromPrevious = Boolean.TRUE.equals(previousSentMap.get(candidateId));
+            state.setSentToPreDaily(sentFromRequest || sentFromPrevious);
+            sanitized.add(state);
+        }
+        return sanitized;
+    }
+
+    private List<TodoItemState> readTodoItems(String todoItemsJson) {
+        if (todoItemsJson == null || todoItemsJson.isBlank()) {
+            return new ArrayList<>();
+        }
+        try {
+            TodoItemState[] parsed = objectMapper.readValue(todoItemsJson, TodoItemState[].class);
+            return parsed != null ? new ArrayList<>(Arrays.asList(parsed)) : new ArrayList<>();
+        } catch (Exception ignored) {
+            return new ArrayList<>();
+        }
+    }
+
+    private String serializeTodoItems(List<TodoItemState> items) {
+        try {
+            return objectMapper.writeValueAsString(items != null ? items : Collections.emptyList());
+        } catch (Exception ex) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Erro ao salvar tarefas da anotacao.");
+        }
+    }
+
+    private void pushFinishedTodoItemsToPreDaily(User user, String projectName, List<TodoItemState> items) {
+        if (items == null || items.isEmpty()) return;
+
+        PreDaily preDaily = preDailyRepository.findFirstByUserOrderByUpdatedAtDesc(user).orElse(null);
+        if (preDaily == null) {
+            preDaily = new PreDaily();
+            preDaily.setUser(user);
+            preDaily.setDailyDate(LocalDate.now());
+        }
+        if (preDaily.getDailyDate() == null) {
+            preDaily.setDailyDate(LocalDate.now());
+        }
+        if (preDaily.getTasks() == null) {
+            preDaily.setTasks(new ArrayList<>());
+        }
+
+        String normalizedProjectName = normalizeProjectName(projectName);
+        boolean changed = false;
+        for (TodoItemState item : items) {
+            String desc = item.getText() != null ? item.getText().trim() : "";
+            if (desc.isEmpty()) continue;
+
+            boolean alreadyExists = preDaily.getTasks().stream()
+                .anyMatch(task ->
+                    normalizeProjectName(task.getProjectName()).equals(normalizedProjectName) &&
+                    Objects.equals(task.getDescription() != null ? task.getDescription().trim() : "", desc)
+                );
+            if (alreadyExists) continue;
+
+            PreDailyTask task = new PreDailyTask();
+            task.setPreDaily(preDaily);
+            task.setProjectName(normalizedProjectName);
+            task.setDescription(desc);
+            preDaily.getTasks().add(task);
+            changed = true;
+        }
+        if (changed) {
+            preDailyRepository.save(preDaily);
+        }
+    }
+
+    private void removeTodoItemsFromPreDaily(User user, String projectName, List<TodoItemState> items) {
+        if (items == null || items.isEmpty()) return;
+
+        PreDaily preDaily = preDailyRepository.findFirstByUserOrderByUpdatedAtDesc(user).orElse(null);
+        if (preDaily == null || preDaily.getTasks() == null || preDaily.getTasks().isEmpty()) return;
+
+        List<PreDailyTask> tasks = preDaily.getTasks();
+        String normalizedProjectName = normalizeProjectName(projectName);
+        boolean changed = false;
+
+        for (TodoItemState item : items) {
+            String desc = item.getText() != null ? item.getText().trim() : "";
+            if (desc.isEmpty()) continue;
+
+            Optional<PreDailyTask> match = tasks.stream()
+                .filter(task -> normalizeProjectName(task.getProjectName()).equals(normalizedProjectName))
+                .filter(task -> {
+                    String taskDesc = task.getDescription() != null ? task.getDescription().trim() : "";
+                    return taskDesc.equals(desc);
+                })
+                .findFirst();
+            if (match.isPresent()) {
+                tasks.remove(match.get());
+                changed = true;
+            }
+        }
+
+        if (changed) {
+            preDailyRepository.save(preDaily);
+        }
     }
 
     private String cleanProtocol(String protocol) {
@@ -571,5 +841,44 @@ public class DailyService {
         if (projectName == null) return "Geral";
         String trimmed = projectName.trim();
         return trimmed.isEmpty() ? "Geral" : trimmed;
+    }
+
+    private static class TodoItemState {
+        private String id;
+        private String text;
+        private boolean finished;
+        private boolean sentToPreDaily;
+
+        public String getId() {
+            return id;
+        }
+
+        public void setId(String id) {
+            this.id = id;
+        }
+
+        public String getText() {
+            return text;
+        }
+
+        public void setText(String text) {
+            this.text = text;
+        }
+
+        public boolean isFinished() {
+            return finished;
+        }
+
+        public void setFinished(boolean finished) {
+            this.finished = finished;
+        }
+
+        public boolean isSentToPreDaily() {
+            return sentToPreDaily;
+        }
+
+        public void setSentToPreDaily(boolean sentToPreDaily) {
+            this.sentToPreDaily = sentToPreDaily;
+        }
     }
 }
