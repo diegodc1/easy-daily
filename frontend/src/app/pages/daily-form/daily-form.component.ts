@@ -483,6 +483,11 @@ export class DailyFormComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
+    if (!this.requestReason.trim()) {
+      this.requestError = 'Informe o motivo da solicitacao para continuar.';
+      return;
+    }
+
     this.requestLoading = true;
     this.requestError = '';
     this.requestSuccess = '';
@@ -526,7 +531,7 @@ export class DailyFormComponent implements OnInit, AfterViewInit, OnDestroy {
 
   save() {
     if (this.isEditLocked) {
-      this.saveError = 'Esta daily esta bloqueada para alteracao ate aprovacao do admin.';
+      this.saveError = 'Edicao bloqueada. Solicite liberacao ao admin para alterar esta daily.';
       return;
     }
     if (this.pctWarning()) {

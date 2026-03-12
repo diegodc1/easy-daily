@@ -1,4 +1,4 @@
-<div class="fade-in daily-page">
+<div class="fade-in daily-page" [class.daily-page-locked]="isEditLocked">
   <div class="page-header">
     <div>
       <div class="page-title">Minha Daily</div>
@@ -30,28 +30,40 @@
   <div class="alert alert-success" *ngIf="protocolSyncMessage && !protocolSyncMessage.startsWith('Nao foi')">{{ protocolSyncMessage }}</div>
   <div class="alert alert-error" *ngIf="protocolSyncMessage && protocolSyncMessage.startsWith('Nao foi')">{{ protocolSyncMessage }}</div>
 
-  <div class="card" *ngIf="isEditLocked" style="margin-bottom:20px;border-color:var(--warning)">
-    <div class="card-title" style="margin-bottom:8px">Alteracao bloqueada</div>
-    <div style="color:var(--text-muted);margin-bottom:12px">
-      Para alterar esta daily, solicite aprovacao do admin.
-    </div>
-    <div style="font-size:13px;margin-bottom:12px">
-      Status atual:
-      <strong [style.color]="editRequestStatus === 'PENDING' ? 'var(--warning)' : (editRequestStatus === 'REJECTED' ? 'var(--danger)' : 'var(--text)')">
+  <div class="card daily-lock-card" *ngIf="isEditLocked">
+    <div class="daily-lock-header">
+      <div>
+        <div class="card-title daily-lock-title">Edicao bloqueada</div>
+        <div class="daily-lock-subtitle">Esta daily ja foi enviada e está bloqueada para alterações.  Para liberar uma nova edição, envie uma solicitação para o admin.</div>
+      </div>
+      <span
+        class="daily-lock-status"
+        [class.pending]="editRequestStatus === 'PENDING'"
+        [class.rejected]="editRequestStatus === 'REJECTED'">
         {{ editRequestStatus || 'SEM SOLICITACAO' }}
-      </strong>
+      </span>
     </div>
-    <div class="form-group" style="margin-bottom:12px">
-      <label class="form-label">Motivo da alteracao (opcional)</label>
-      <textarea class="form-control" rows="3" [(ngModel)]="requestReason" placeholder="Descreva por que precisa alterar esta daily"></textarea>
+
+
+    <div class="form-group daily-lock-reason">
+      <label class="form-label">Motivo da alteração</label>
+      <textarea
+        class="form-control"
+        rows="3"
+        [(ngModel)]="requestReason"
+        (ngModelChange)="requestError = ''"
+        placeholder="Ex.: Ajustar percentual de tempo e corrigir uma tarefa."
+        required></textarea>
     </div>
-    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+
+    <div class="daily-lock-actions">
       <button class="btn btn-secondary" (click)="requestEditPermission()" [disabled]="requestLoading || editRequestStatus === 'PENDING'">
         <span class="spinner" *ngIf="requestLoading"></span>
-        {{ requestLoading ? 'Enviando...' : 'Solicitar alteracao' }}
+        {{ requestLoading ? 'Enviando...' : 'Solicitar liberacao' }}
       </button>
-      <span style="font-size:13px;color:var(--text-muted)" *ngIf="editRequestStatus === 'PENDING'">Aguardando decisao do admin.</span>
+      <span class="daily-lock-pending-note" *ngIf="editRequestStatus === 'PENDING'">Solicitação enviada. Aguardando análise do admin.</span>
     </div>
+
     <div class="alert alert-success" *ngIf="requestSuccess" style="margin-top:12px">{{ requestSuccess }}</div>
     <div class="alert alert-error" *ngIf="requestError" style="margin-top:12px">{{ requestError }}</div>
   </div>

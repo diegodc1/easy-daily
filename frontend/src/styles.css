@@ -220,6 +220,69 @@ select.form-control option { background: var(--surface); color: var(--text); }
 .daily-task-remove-btn { min-width: 40px; width: 40px; height: 40px; padding: 0; justify-content: center; }
 .daily-save-row { margin-top: 24px; display: flex; justify-content: flex-end; }
 .daily-save-btn { min-width: 200px; }
+.daily-lock-card {
+  margin-bottom: 20px;
+  border-color: color-mix(in srgb, var(--warning) 55%, var(--border));
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--warning) 6%, transparent), transparent 40%),
+    var(--surface);
+}
+.daily-lock-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.daily-lock-title { color: var(--warning); margin-bottom: 6px; }
+.daily-lock-subtitle { color: var(--text); font-size: 14px; line-height: 1.45; }
+.daily-lock-status {
+  flex-shrink: 0;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .7px;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  background: var(--surface2);
+}
+.daily-lock-status.pending {
+  color: var(--warning);
+  border-color: color-mix(in srgb, var(--warning) 40%, var(--border));
+  background: color-mix(in srgb, var(--warning) 14%, transparent);
+}
+.daily-lock-status.rejected {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 45%, var(--border));
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+}
+.daily-lock-help {
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.daily-lock-reason { margin-bottom: 12px; }
+.daily-lock-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.daily-lock-pending-note {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.daily-page-locked .page-header,
+.daily-page-locked fieldset,
+.daily-page-locked .daily-save-row {
+  opacity: .45;
+  transition: opacity .2s ease;
+}
 
 /* ===== PCT BADGE ===== */
 .pct-badge     { font-family: var(--font-mono); font-size: 13px; font-weight: 700; color: var(--accent); padding: 6px 14px; background: rgba(0,163,113,.1); border: 1px solid rgba(0,163,113,.25); border-radius: 20px; }
@@ -571,6 +634,8 @@ select.form-control option { background: var(--surface); color: var(--text); }
   .daily-page .daily-task-row .daily-task-remove-btn { grid-column: 2 / 3; justify-self: end; }
   .daily-page .daily-blockers-card .toggle-wrap { align-items: flex-start; }
   .daily-page .daily-save-btn { min-width: 0; }
+  .daily-page .daily-lock-header { flex-direction: column; align-items: stretch; }
+  .daily-page .daily-lock-status { align-self: flex-start; }
 
   /* Histórico */
   .history-page .history-bottom-row { gap: 12px !important; }
@@ -637,6 +702,7 @@ select.form-control option { background: var(--surface); color: var(--text); }
     background: linear-gradient(to top, var(--bg) 75%, transparent);
   }
   .daily-page .daily-save-btn { width: 100%; justify-content: center; padding: 12px 18px !important; }
+  .daily-page .daily-lock-actions .btn { width: auto; min-width: 0; }
 
   /* Histórico */
   .history-page .history-bottom-row { flex-direction: column; gap: 10px !important; }
