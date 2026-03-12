@@ -1,0 +1,191 @@
+<div class="fade-in meeting-page">
+  <div class="meeting-sort-overlay" *ngIf="sortAnimating || revealAnimating">
+    <div class="meeting-sort-card" *ngIf="sortAnimating" [class.slow]="sortPhase === 'slow'" [class.rapid]="sortPhase === 'rapid'">
+      <div class="meeting-sort-label">{{ sortPhase === 'rapid' ? 'Sorteando participante...' : 'Desacelerando sorteio...' }}</div>
+      <div class="meeting-sort-wheel">
+        <div class="meeting-sort-ghost">{{ sortPrevName }}</div>
+        <div class="meeting-sort-name">{{ sortDisplayName }}</div>
+        <div class="meeting-sort-ghost">{{ sortNextName }}</div>
+      </div>
+    </div>
+    <div class="meeting-reveal-card" *ngIf="revealAnimating">
+      <div class="meeting-reveal-label">Selecionado</div>
+      <div class="meeting-reveal-name">{{ revealName }}</div>
+    </div>
+  </div>
+
+  <div class="meeting-finish-overlay" *ngIf="finishedCelebrating">
+    <div class="meeting-finish-card">
+      <div class="meeting-finish-title">Daily finalizada.</div>
+      <div class="meeting-finish-subtitle">Bom trabalho a todos!</div>
+    </div>
+  </div>
+
+  <div class="page-header">
+    <div>
+      <div class="page-title">Modo Reunião</div>
+      <div class="page-subtitle" *ngIf="state?.date">{{ formatDate(state!.date) }}</div>
+    </div>
+    <div class="filter-bar" style="margin:0;padding:10px 16px;display:flex;gap:10px;align-items:center">
+      <label class="form-label" style="margin:0">Data</label>
+      <input type="date" class="form-control" style="width:auto" [(ngModel)]="selectedDate" (change)="onDateChange()">
+      <button class="btn btn-secondary btn-sm" type="button" (click)="loadState()" [disabled]="loading || actionLoading">Atualizar</button>
+      <label class="meeting-start-mode" *ngIf="auth.isAdmin() && state?.status !== 'IN_PROGRESS'">
+        <input type="checkbox" [(ngModel)]="startRandomize">
+        <span>Sorteio Aleatório</span>
+      </label>
+      <button
+        class="btn btn-primary btn-sm"
+        type="button"
+        *ngIf="auth.isAdmin() && state?.status !== 'IN_PROGRESS'"
+        (click)="startMeeting()"
+        [disabled]="actionLoading">
+        Iniciar daily
+      </button>
+      <button
+        class="btn btn-secondary btn-sm"
+        type="button"
+        *ngIf="auth.isAdmin() && state?.status === 'IN_PROGRESS'"
+        (click)="nextTurn()"
+        [disabled]="actionLoading">
+        Sortear proximo
+      </button>
+<!--      <button-->
+<!--        class="btn btn-danger btn-sm"-->
+<!--        type="button"-->
+<!--        *ngIf="auth.isAdmin()"-->
+<!--        (click)="resetMeeting()"-->
+<!--        [disabled]="actionLoading">-->
+<!--        Refazer reuniao-->
+<!--      </button>-->
+    </div>
+  </div>
+
+  <div class="alert alert-error" *ngIf="errorMessage">{{ errorMessage }}</div>
+  <div class="alert alert-success" *ngIf="successMessage">{{ successMessage }}</div>
+
+  <div class="card" *ngIf="loading">
+    <span class="spinner"></span>
+  </div>
+
+  <ng-container *ngIf="!loading && state">
+    <div class="meeting-status-row">
+      <div class="meeting-status-chip">{{ state.status === 'IDLE' ? 'Aguardando inicio' : (state.status === 'FINISHED' ? 'Concluida' : 'Em andamento') }}</div>
+      <div class="meeting-status-count">{{ state.spokenCount }} / {{ state.totalParticipants }} concluidos</div>
+      <div class="meeting-status-count">Elegiveis para sorteio: {{ eligibleParticipants.length }}</div>
+      <div class="meeting-status-count">Modo: {{ state.orderMode === 'ORDERED' ? 'Ordem fixa' : 'Sorteio' }}</div>
+    </div>
+
+    <div class="card meeting-current-card" *ngIf="currentSpeaker; else noSpeaker">
+      <div class="card-header" style="margin-bottom:12px">
+        <div>
+          <div class="card-title">Falando Agora</div>
+          <div style="font-size:22px;font-weight:700;line-height:1.2">{{ currentSpeaker.user.fullName }}</div>
+        </div>
+        <div class="meeting-order-badge" *ngIf="currentSpeaker.orderIndex">Ordem #{{ currentSpeaker.orderIndex }}</div>
+      </div>
+
+      <div class="grid-2" style="gap:12px" *ngIf="currentSpeakerDaily as daily">
+        <div class="card meeting-task-card">
+          <div class="card-title" style="margin-bottom:10px">Tarefas de Ontem</div>
+          <ng-container *ngIf="yesterdayTaskGroups.length > 0; else noYesterdayTasks">
+            <div class="meeting-task-project" *ngFor="let group of yesterdayTaskGroups">
+              <div class="project-pill" style="margin:0 0 8px 0">
+                <span class="pill-project">{{ group.projectName }}</span>
+                <span class="pill-pct" *ngIf="group.percentSpent !== null">{{ group.percentSpent }}%</span>
+              </div>
+              <div class="meeting-task-line" *ngFor="let task of group.tasks">{{ task }}</div>
+            </div>
+          </ng-container>
+          <ng-template #noYesterdayTasks>
+            <div class="info-box">Sem tarefas registradas para ontem.</div>
+          </ng-template>
+        </div>
+
+        <div class="card meeting-task-card">
+          <div class="card-title" style="margin-bottom:10px">Tarefas de Hoje</div>
+          <ng-container *ngIf="todayTaskGroups.length > 0; else noTodayTasks">
+            <div class="meeting-task-project" *ngFor="let group of todayTaskGroups">
+              <div class="project-pill" style="margin:0 0 8px 0">
+                <span class="pill-project">{{ group.projectName }}</span>
+              </div>
+              <div class="meeting-task-line" *ngFor="let task of group.tasks">{{ task }}</div>
+            </div>
+          </ng-container>
+          <ng-template #noTodayTasks>
+            <div class="info-box">Sem tarefas registradas para hoje.</div>
+          </ng-template>
+        </div>
+      </div>
+
+      <div class="info-box" style="margin-top:12px" *ngIf="currentSpeakerDaily as daily">
+        <strong>Bloqueios:</strong>
+        <span [style.color]="daily.hasBlocker ? 'var(--danger)' : 'var(--text-muted)'">
+          {{ daily.hasBlocker ? (daily.blockers || 'Nao detalhado.') : 'Sem bloqueios.' }}
+        </span>
+      </div>
+
+      <div class="meeting-protocol-row" style="margin-top: 1rem" *ngIf="currentSpeakerDaily as daily">
+          <div class="meeting-protocol-chip" *ngFor="let p of protocolSummary">
+              <span class="meeting-protocol-type">{{ p.type }}</span>
+              <strong>{{ p.value }}</strong>
+          </div>
+          <div class="meeting-protocol-total">Total: {{ protocolTotal }}</div>
+      </div>
+
+      <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">
+        <button
+          class="btn btn-primary"
+          type="button"
+          *ngIf="!auth.isAdmin() && state.canFinishCurrentTurn && isCurrentUserSpeaker"
+          (click)="finishMyTurn()"
+          [disabled]="actionLoading">
+          Vez finalizada
+        </button>
+        <button
+          class="btn btn-secondary"
+          type="button"
+          *ngIf="auth.isAdmin() && state.status === 'IN_PROGRESS'"
+          (click)="nextTurn()"
+          [disabled]="actionLoading">
+          Sortear proximo
+        </button>
+      </div>
+    </div>
+
+    <ng-template #noSpeaker>
+      <div class="card meeting-current-card">
+        <div class="card-title" style="margin-bottom:8px">Falando Agora</div>
+        <div style="color:var(--text-muted)">
+          {{ state.status === 'FINISHED' ? 'Todos os participantes finalizaram.' : 'Nenhum participante sorteado ainda.' }}
+        </div>
+      </div>
+    </ng-template>
+
+    <div class="card" style="margin-top:20px">
+      <div class="card-header" style="margin-bottom:14px">
+        <div class="card-title">Participantes</div>
+      </div>
+
+      <div class="meeting-participant-list" *ngIf="participantsSorted.length > 0; else emptyParticipants">
+        <div
+          class="meeting-participant-item"
+          *ngFor="let p of participantsSorted; trackBy: trackByUserId"
+          [class.current]="p.user.id === currentSpeakerUserIdForView"
+          [class.done]="p.spoke">
+          <div class="meeting-participant-main">
+            <span class="meeting-participant-order" *ngIf="p.orderIndex">#{{ p.orderIndex }}</span>
+            <strong>{{ p.user.fullName }}</strong>
+          </div>
+          <span class="meeting-participant-badge" [class.current]="p.user.id === currentSpeakerUserIdForView" [class.done]="p.spoke">
+            {{ p.daily ? (p.spoke ? 'Falou' : (p.user.id === currentSpeakerUserIdForView ? 'Da vez' : 'Pendente')) : 'Sem daily' }}
+          </span>
+        </div>
+      </div>
+
+      <ng-template #emptyParticipants>
+        <div class="info-box">Nenhuma daily encontrada para essa data.</div>
+      </ng-template>
+    </div>
+  </ng-container>
+</div>
