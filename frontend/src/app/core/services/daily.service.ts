@@ -14,6 +14,7 @@ import {
   UserProjectPreferences,
   PreDaily,
   GeneralNote,
+  MeetingSession,
 } from '../models/models';
 import { environment } from '../../../environments/environment';
 import { AuthService } from './auth.service';
@@ -130,6 +131,16 @@ export class DailyService {
     return this.http.put<UserProjectPreferences>(`${this.base}/daily/projects/preferences`, { projectIds });
   }
 
+  getMeetingState(date: string): Observable<MeetingSession> {
+    return this.http.get<MeetingSession>(`${this.base}/daily/meeting/state`, {
+      params: new HttpParams().set('date', date),
+    });
+  }
+
+  finishMeetingTurn(date: string): Observable<MeetingSession> {
+    return this.http.post<MeetingSession>(`${this.base}/daily/meeting/finish-turn`, { date });
+  }
+
   // ── Admin ─────────────────────────────────────────────────────
   getAllGrouped(start: string, end: string): Observable<DailyByDate[]> {
     const params = new HttpParams().set('start', start).set('end', end);
@@ -152,6 +163,26 @@ export class DailyService {
   }
   rejectEditRequest(id: number, note?: string): Observable<DailyEditRequest> {
     return this.http.patch<DailyEditRequest>(`${this.base}/admin/edit-requests/${id}/reject`, { note });
+  }
+
+  startMeeting(date: string, randomize = true): Observable<MeetingSession> {
+    return this.http.post<MeetingSession>(`${this.base}/admin/meeting/start`, {
+      date,
+      randomize,
+      orderMode: randomize ? 'RANDOM' : 'ORDERED',
+    });
+  }
+
+  nextMeetingTurn(date: string, randomize?: boolean): Observable<MeetingSession> {
+    return this.http.post<MeetingSession>(`${this.base}/admin/meeting/next`, {
+      date,
+      randomize,
+      orderMode: randomize === undefined ? undefined : (randomize ? 'RANDOM' : 'ORDERED'),
+    });
+  }
+
+  resetMeeting(date: string): Observable<MeetingSession> {
+    return this.http.post<MeetingSession>(`${this.base}/admin/meeting/reset`, { date });
   }
 
   // ── Project config ────────────────────────────────────────────

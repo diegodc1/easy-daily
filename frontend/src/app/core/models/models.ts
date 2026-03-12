@@ -37,7 +37,7 @@ export interface AppProject {
 export interface User {
   id: number; username: string; fullName: string; email: string;
   bitrixId?: string;
-  role: 'ADMIN' | 'MEMBER'; active: boolean;
+  role: 'ADMIN' | 'MEMBER' | 'SISTEMA'; active: boolean;
 }
 
 export interface ProjectTime {
@@ -101,9 +101,29 @@ export interface DailyEditRequest {
 
 export interface LoginRequest  { username: string; password: string; }
 export interface LoginResponse { token: string; username: string; fullName: string; role: string; bitrixId?: string; }
-export interface UserRequest   { username: string; password: string; fullName: string; email: string; bitrixId?: string; role: string; }
+export interface UserRequest   { username: string; password: string; fullName: string; email: string; bitrixId?: string; role: 'ADMIN' | 'MEMBER' | 'SISTEMA'; }
 export interface ProjectRequest { name: string; color: string; sortOrder: number; }
 export interface UserProjectPreferences { projectIds: number[]; }
+
+export interface MeetingParticipant {
+  user: User;
+  daily?: Daily;
+  spoke: boolean;
+  orderIndex?: number | null;
+}
+
+export interface MeetingSession {
+  date: string;
+  status: 'IDLE' | 'IN_PROGRESS' | 'FINISHED';
+  orderMode?: 'RANDOM' | 'ORDERED';
+  currentSpeakerUserId?: number | null;
+  totalParticipants: number;
+  spokenCount: number;
+  canControl: boolean;
+  canFinishCurrentTurn: boolean;
+  participants: MeetingParticipant[];
+  updatedAt?: string;
+}
 
 export interface PreDailyTask {
   id?: number;

@@ -24,6 +24,7 @@ public class DataInitializer implements CommandLineRunner {
     @Override
     public void run(String... args) {
         ensureGeneralNotesSchema();
+        ensureUsersRoleSchema();
 
         // Default admin
         if (!userRepository.existsByUsername("admin")) {
@@ -123,6 +124,38 @@ public class DataInitializer implements CommandLineRunner {
                 """);
         } catch (Exception ex) {
             System.out.println(">>> Aviso: nao foi possivel validar schema de general_notes automaticamente: " + ex.getMessage());
+        }
+    }
+
+    private void ensureUsersRoleSchema() {
+        try {
+            jdbcTemplate.execute("""
+                DO $$
+                BEGIN
+                    IF EXISTS (
+                        SELECT 1
+                        FROM information_schema.table_constraints
+                        WHERE table_name = 'users'
+                          AND constraint_type = 'CHECK'
+                          AND constraint_name = 'users_role_check'
+                    ) THEN
+                        ALTER TABLE users DROP CONSTRAINT users_role_check;
+                    END IF;
+                END $$;
+                """);
+
+            jdbcTemplate.execute("""
+                DO $$
+                BEGIN
+                    ALTER TABLE users
+                    ADD CONSTRAINT users_role_check
+                    CHECK (UPPER(role) IN ('ADMIN', 'MEMBER', 'SISTEMA'));
+                EXCEPTION
+                    WHEN duplicate_object THEN NULL;
+                END $$;
+                """);
+        } catch (Exception ex) {
+            System.out.println(">>> Aviso: nao foi possivel validar schema de users/role automaticamente: " + ex.getMessage());
         }
     }
 }

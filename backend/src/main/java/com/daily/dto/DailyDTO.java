@@ -141,6 +141,32 @@ public class DailyDTO {
         private List<Long> projectIds;
     }
 
+    @Data public static class MeetingActionRequest {
+        @NotNull private LocalDate date;
+        private Boolean randomize;
+        private String orderMode;
+    }
+
+    @Data public static class MeetingParticipantResponse {
+        private UserResponse user;
+        private DailyResponse daily;
+        private boolean spoke;
+        private Integer orderIndex;
+    }
+
+    @Data public static class MeetingSessionResponse {
+        private LocalDate date;
+        private String status;
+        private String orderMode;
+        private Long currentSpeakerUserId;
+        private Integer totalParticipants;
+        private Integer spokenCount;
+        private boolean canControl;
+        private boolean canFinishCurrentTurn;
+        private List<MeetingParticipantResponse> participants;
+        private String updatedAt;
+    }
+
     @Data public static class PreDailyTaskRequest {
         @NotBlank private String projectName;
         @NotBlank @Size(max = 2000) private String description;

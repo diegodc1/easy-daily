@@ -34,7 +34,7 @@
           <td style="color:var(--text-muted)">{{ u.email || '-' }}</td>
           <td style="font-family:var(--font-mono);font-size:13px;color:var(--text-muted)">{{ u.bitrixId || '-' }}</td>
           <td>
-            <span class="badge" [class.badge-admin]="u.role==='ADMIN'" [class.badge-member]="u.role==='MEMBER'">
+            <span class="badge" [class.badge-admin]="u.role==='ADMIN'" [class.badge-member]="u.role==='MEMBER'" [class.badge-system]="u.role==='SISTEMA'">
               {{ u.role }}
             </span>
           </td>
@@ -91,6 +91,7 @@
       <select class="form-control" [(ngModel)]="form.role">
         <option value="MEMBER">Membro</option>
         <option value="ADMIN">Administrador</option>
+        <option value="SISTEMA">Sistema</option>
       </select>
     </div>
 

@@ -51,7 +51,10 @@ export class AuthService {
   }
 
   getUser():     LoginResponse | null { return this.user$.value; }
-  isAdmin():     boolean { return this.user$.value?.role === 'ADMIN'; }
+  isAdmin():     boolean {
+    const role = this.user$.value?.role;
+    return role === 'ADMIN' || role === 'SISTEMA';
+  }
   isLoggedIn():  boolean {
     const token = localStorage.getItem('daily_token');
     const hasUser = !!this.user$.value;

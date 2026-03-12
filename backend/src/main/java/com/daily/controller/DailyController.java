@@ -3,6 +3,7 @@ package com.daily.controller;
 import com.daily.dto.DailyDTO.*;
 import com.daily.entity.User;
 import com.daily.service.DailyService;
+import com.daily.service.MeetingService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -18,6 +19,7 @@ import java.util.List;
 public class DailyController {
 
     private final DailyService dailyService;
+    private final MeetingService meetingService;
 
     @PostMapping
     public ResponseEntity<DailyResponse> save(@AuthenticationPrincipal User user,
@@ -150,5 +152,20 @@ public class DailyController {
             @AuthenticationPrincipal User user,
             @RequestBody UserProjectPreferencesRequest req) {
         return ResponseEntity.ok(dailyService.saveProjectPreferences(user, req));
+    }
+
+    @GetMapping("/meeting/state")
+    public ResponseEntity<MeetingSessionResponse> getMeetingState(
+            @AuthenticationPrincipal User user,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        LocalDate resolvedDate = date != null ? date : LocalDate.now();
+        return ResponseEntity.ok(meetingService.getState(user, resolvedDate));
+    }
+
+    @PostMapping("/meeting/finish-turn")
+    public ResponseEntity<MeetingSessionResponse> finishMeetingTurn(
+            @AuthenticationPrincipal User user,
+            @Valid @RequestBody MeetingActionRequest req) {
+        return ResponseEntity.ok(meetingService.finishTurn(user, req.getDate()));
     }
 }

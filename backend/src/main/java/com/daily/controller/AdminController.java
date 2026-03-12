@@ -5,6 +5,7 @@ import com.daily.entity.DailyEditRequest;
 import com.daily.entity.User;
 import com.daily.repository.UserRepository;
 import com.daily.service.DailyService;
+import com.daily.service.MeetingService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -23,6 +24,7 @@ import java.util.stream.Collectors;
 public class AdminController {
 
     private final DailyService dailyService;
+    private final MeetingService meetingService;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
@@ -150,5 +152,38 @@ public class AdminController {
             userRepository.save(u);
             return ResponseEntity.ok().<Void>build();
         }).orElse(ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/meeting/start")
+    public ResponseEntity<MeetingSessionResponse> startMeeting(
+            @AuthenticationPrincipal User admin,
+            @Valid @RequestBody MeetingActionRequest req) {
+        boolean randomize;
+        if (req.getOrderMode() != null && !req.getOrderMode().isBlank()) {
+            randomize = !"ORDERED".equalsIgnoreCase(req.getOrderMode().trim());
+        } else {
+            randomize = req.getRandomize() == null || req.getRandomize();
+        }
+        return ResponseEntity.ok(meetingService.start(admin, req.getDate(), randomize));
+    }
+
+    @PostMapping("/meeting/next")
+    public ResponseEntity<MeetingSessionResponse> nextMeetingTurn(
+            @AuthenticationPrincipal User admin,
+            @Valid @RequestBody MeetingActionRequest req) {
+        Boolean randomize = null;
+        if (req.getOrderMode() != null && !req.getOrderMode().isBlank()) {
+            randomize = !"ORDERED".equalsIgnoreCase(req.getOrderMode().trim());
+        } else if (req.getRandomize() != null) {
+            randomize = req.getRandomize();
+        }
+        return ResponseEntity.ok(meetingService.next(admin, req.getDate(), randomize));
+    }
+
+    @PostMapping("/meeting/reset")
+    public ResponseEntity<MeetingSessionResponse> resetMeeting(
+            @AuthenticationPrincipal User admin,
+            @Valid @RequestBody MeetingActionRequest req) {
+        return ResponseEntity.ok(meetingService.reset(admin, req.getDate()));
     }
 }

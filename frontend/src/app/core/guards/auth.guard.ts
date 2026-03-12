@@ -20,6 +20,14 @@ export const adminGuard: CanActivateFn = () => {
   return false;
 };
 
+export const participantGuard: CanActivateFn = () => {
+  const auth = inject(AuthService);
+  const router = inject(Router);
+  if (auth.getUser()?.role !== 'SISTEMA') return true;
+  router.navigate(['/dashboard']);
+  return false;
+};
+
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const auth = inject(AuthService);
   const token = auth.getToken();

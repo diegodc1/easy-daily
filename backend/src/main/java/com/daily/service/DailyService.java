@@ -33,6 +33,7 @@ public class DailyService {
 
     @Transactional
     public DailyResponse saveOrUpdate(User user, DailyRequest req) {
+        ensureDailyUser(user);
         Daily daily = dailyRepository.findByUserAndDailyDate(user, req.getDailyDate()).orElse(null);
         boolean updatingExisting = daily != null;
 
@@ -94,6 +95,7 @@ public class DailyService {
     }
 
     public Optional<DailyResponse> getByUserAndDate(User user, LocalDate date) {
+        ensureDailyUser(user);
         return dailyRepository.findByUserAndDailyDate(user, date).map(d -> {
             DailyResponse response = toResponse(d);
             applyEditPermission(response, user, d);
@@ -432,6 +434,7 @@ public class DailyService {
 
     @Transactional
     public DailyEditRequestResponse requestEditPermission(User user, DailyEditRequestCreate req) {
+        ensureDailyUser(user);
         if (user.getRole() == User.Role.ADMIN) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Admins nao precisam solicitar alteracao.");
         }
@@ -600,6 +603,12 @@ public class DailyService {
 
         response.setCanEdit(false);
         response.setEditRequestStatus(null);
+    }
+
+    private void ensureDailyUser(User user) {
+        if (user == null || user.getRole() == User.Role.SISTEMA) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Usuario SISTEMA nao participa das rotinas de daily.");
+        }
     }
 
     private String formatTasksAsDoneYesterday(List<DailyTask> tasks) {

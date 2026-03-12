@@ -1,11 +1,11 @@
 import { Routes } from '@angular/router';
-import { authGuard, adminGuard } from './core/guards/auth.guard';
+import { authGuard, adminGuard, participantGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'daily', pathMatch: 'full' },
   { path: 'login',
     loadComponent: () => import('./pages/login/login.component').then(m => m.LoginComponent) },
-  { path: 'daily', canActivate: [authGuard],
+  { path: 'daily', canActivate: [authGuard, participantGuard],
     loadComponent: () => import('./pages/daily-form/daily-form.component').then(m => m.DailyFormComponent) },
   { path: 'pre-daily', canActivate: [authGuard],
     loadComponent: () => import('./pages/pre-daily/pre-daily.component').then(m => m.PreDailyComponent) },
@@ -13,6 +13,8 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/general-notes/general-notes.component').then(m => m.GeneralNotesComponent) },
   { path: 'history', canActivate: [authGuard],
     loadComponent: () => import('./pages/history/history.component').then(m => m.HistoryComponent) },
+  { path: 'meeting', canActivate: [authGuard, participantGuard],
+    loadComponent: () => import('./pages/meeting-room/meeting-room.component').then(m => m.MeetingRoomComponent) },
   { path: 'dashboard', canActivate: [authGuard, adminGuard],
     loadComponent: () => import('./pages/admin-dashboard/admin-dashboard.component').then(m => m.AdminDashboardComponent) },
   { path: 'admin/dailies', canActivate: [authGuard, adminGuard],
