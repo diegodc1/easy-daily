@@ -1,4 +1,4 @@
-import { CanActivateFn, Router } from '@angular/router';
+import { CanActivateFn, CanDeactivateFn, Router } from '@angular/router';
 import { inject } from '@angular/core';
 import { HttpInterceptorFn } from '@angular/common/http';
 import { AuthService } from '../services/auth.service';
@@ -26,6 +26,15 @@ export const participantGuard: CanActivateFn = () => {
   if (auth.getUser()?.role !== 'SISTEMA') return true;
   router.navigate(['/dashboard']);
   return false;
+};
+
+export type PendingChangesComponent = {
+  confirmDiscardChanges: () => boolean | Promise<boolean>;
+};
+
+export const pendingChangesGuard: CanDeactivateFn<PendingChangesComponent> = (component) => {
+  if (!component || typeof component.confirmDiscardChanges !== 'function') return true;
+  return component.confirmDiscardChanges();
 };
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {

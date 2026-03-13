@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, HostListener, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { catchError, of } from 'rxjs';
@@ -12,8 +12,6 @@ import { AppProject, PreDaily, PreDailyTask } from '../../core/models/models';
   templateUrl: './pre-daily.component.html',
 })
 export class PreDailyComponent implements OnInit {
-  private readonly lastEventStorageKey = 'pre_daily_last_event';
-
   projects: AppProject[] = [];
   visibleProjectIds: number[] = [];
   selectedProject = '';
@@ -28,14 +26,16 @@ export class PreDailyComponent implements OnInit {
   saveError = '';
   showClearModal = false;
   showRemoveProjectModal = false;
+  showLeaveModal = false;
   projectToRemove: string | null = null;
-  lastEventText = '';
+  lastUpdatedAt: string | null = null;
+
+  private lastSavedSignature = '';
+  private pendingLeaveResolver: ((allow: boolean) => void) | null = null;
 
   constructor(private svc: DailyService) {}
 
   ngOnInit() {
-    this.lastEventText = this.readStoredLastEventText();
-
     this.svc.getActiveProjects().pipe(catchError(() => of([]))).subscribe(p => {
       this.projects = p;
       this.svc.getDailyProjectPreferences().pipe(catchError(() => of({ projectIds: p.map(x => x.id) }))).subscribe(pref => {
@@ -46,6 +46,13 @@ export class PreDailyComponent implements OnInit {
     });
   }
 
+  @HostListener('window:beforeunload', ['$event'])
+  onBeforeUnload(event: BeforeUnloadEvent): void {
+    if (!this.hasUnsavedChanges()) return;
+    event.preventDefault();
+    event.returnValue = '';
+  }
+
   get visibleProjects(): AppProject[] {
     const visibleSet = new Set(this.visibleProjectIds);
     return this.projects.filter(p => visibleSet.has(p.id));
@@ -53,6 +60,39 @@ export class PreDailyComponent implements OnInit {
 
   get visibleProjectBlocks(): string[] {
     return this.projectBlocks;
+  }
+
+  get lastUpdatedText(): string {
+    if (!this.lastUpdatedAt) return '';
+    return `Ultima atualizacao: ${this.formatDateTime(this.lastUpdatedAt)}`;
+  }
+
+  hasUnsavedChanges(): boolean {
+    return this.computeCurrentSignature() !== this.lastSavedSignature;
+  }
+
+  confirmDiscardChanges(): boolean | Promise<boolean> {
+    if (!this.hasUnsavedChanges()) return true;
+    this.showLeaveModal = true;
+    return new Promise<boolean>(resolve => {
+      this.pendingLeaveResolver = resolve;
+    });
+  }
+
+  keepEditing(): void {
+    this.showLeaveModal = false;
+    if (this.pendingLeaveResolver) {
+      this.pendingLeaveResolver(false);
+      this.pendingLeaveResolver = null;
+    }
+  }
+
+  discardAndLeave(): void {
+    this.showLeaveModal = false;
+    if (this.pendingLeaveResolver) {
+      this.pendingLeaveResolver(true);
+      this.pendingLeaveResolver = null;
+    }
   }
 
   addProjectBlock() {
@@ -121,9 +161,10 @@ export class PreDailyComponent implements OnInit {
       this.loading = false;
       if (!res) return;
       this.form = { ...res, tasks: res.tasks ?? [] };
-      this.applyUpdateEvent(res.updatedAt ?? res.createdAt);
+      this.lastUpdatedAt = res.updatedAt ?? res.createdAt ?? null;
       this.syncProjectBlocksFromTasks();
       this.ensureSelectedProject();
+      this.markAsSaved();
       this.successMessage = 'Pre-daily salva com sucesso.';
       this.saveSuccess = true;
       setTimeout(() => (this.saveSuccess = false), 3500);
@@ -155,8 +196,9 @@ export class PreDailyComponent implements OnInit {
       this.showClearModal = false;
       this.form = { dailyDate: new Date().toISOString().slice(0, 10), tasks: [] };
       this.projectBlocks = [];
-      this.applyDeleteEvent(new Date().toISOString());
+      this.lastUpdatedAt = null;
       this.ensureSelectedProject();
+      this.markAsSaved();
       this.successMessage = 'Pre-daily limpa com sucesso.';
       this.saveSuccess = true;
       setTimeout(() => (this.saveSuccess = false), 3500);
@@ -167,70 +209,55 @@ export class PreDailyComponent implements OnInit {
     this.form = { dailyDate: new Date().toISOString().slice(0, 10), tasks: [] };
     this.projectBlocks = [];
     this.saveError = '';
+    this.lastUpdatedAt = null;
+    this.markAsSaved();
 
     this.svc.getPreDaily().pipe(catchError(() => of(null))).subscribe(d => {
-      if (!d) return;
-      this.applyUpdateEvent(d.updatedAt ?? d.createdAt);
+      if (!d) {
+        this.markAsSaved();
+        return;
+      }
+      this.lastUpdatedAt = d.updatedAt ?? d.createdAt ?? null;
       this.form = { ...d, tasks: d.tasks ?? [] };
       this.syncProjectBlocksFromTasks();
       this.ensureSelectedProject();
+      this.markAsSaved();
     });
   }
 
-  private applyUpdateEvent(isoDate?: string) {
-    if (!isoDate) return;
-    const current = this.readStoredLastEvent();
-    const next = { type: 'update' as const, at: isoDate };
-    if (!current || this.toMillis(next.at) >= this.toMillis(current.at)) {
-      this.storeLastEvent(next);
-      this.lastEventText = this.buildLastEventText(next);
-    }
+  private markAsSaved() {
+    this.lastSavedSignature = this.computeCurrentSignature();
   }
 
-  private applyDeleteEvent(isoDate: string) {
-    const evt = { type: 'delete' as const, at: isoDate };
-    this.storeLastEvent(evt);
-    this.lastEventText = this.buildLastEventText(evt);
-  }
-
-  private buildLastEventText(event: { type: 'update' | 'delete'; at: string }): string {
-    const action = event.type === 'delete' ? 'Ultima exclusao' : 'Última atualização';
-    return `${action}: ${this.formatDateTime(event.at)}`;
+  private computeCurrentSignature(): string {
+    const tasks = (this.form.tasks ?? []).map(t => ({
+      projectName: (t.projectName ?? '').trim(),
+      description: (t.description ?? '').trim(),
+    }));
+    const blocks = [...this.projectBlocks].map(x => (x ?? '').trim());
+    return JSON.stringify({ tasks, blocks });
   }
 
   private formatDateTime(value: string): string {
-    const parsed = value.includes('T') ? value : value.replace(' ', 'T');
+    const parsed = this.normalizeIsoLikeDate(value);
     const date = new Date(parsed);
     if (Number.isNaN(date.getTime())) return '-';
     return date.toLocaleString('pt-BR');
   }
 
-  private readStoredLastEventText(): string {
-    const event = this.readStoredLastEvent();
-    return event ? this.buildLastEventText(event) : '';
-  }
-
-  private readStoredLastEvent(): { type: 'update' | 'delete'; at: string } | null {
-    try {
-      const raw = localStorage.getItem(this.lastEventStorageKey);
-      if (!raw) return null;
-      const parsed = JSON.parse(raw);
-      if (!parsed?.type || !parsed?.at) return null;
-      if (parsed.type !== 'update' && parsed.type !== 'delete') return null;
-      return parsed;
-    } catch {
-      return null;
+  private normalizeIsoLikeDate(value: string): string {
+    let parsed = (value ?? '').trim();
+    if (!parsed) return '';
+    if (!parsed.includes('T') && parsed.includes(' ')) {
+      parsed = parsed.replace(' ', 'T');
     }
-  }
-
-  private storeLastEvent(event: { type: 'update' | 'delete'; at: string }) {
-    localStorage.setItem(this.lastEventStorageKey, JSON.stringify(event));
-  }
-
-  private toMillis(value: string): number {
-    const parsed = value.includes('T') ? value : value.replace(' ', 'T');
-    const time = new Date(parsed).getTime();
-    return Number.isNaN(time) ? 0 : time;
+    const fractional = parsed.match(/\.(\d+)(Z|[+-]\d{2}:\d{2})?$/);
+    if (fractional && fractional[1].length > 3) {
+      const keepMillis = fractional[1].slice(0, 3);
+      const suffix = fractional[2] ?? '';
+      parsed = parsed.replace(/\.(\d+)(Z|[+-]\d{2}:\d{2})?$/, `.${keepMillis}${suffix}`);
+    }
+    return parsed;
   }
 
   private syncProjectBlocksFromTasks() {

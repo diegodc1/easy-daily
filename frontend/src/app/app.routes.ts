@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { authGuard, adminGuard, participantGuard } from './core/guards/auth.guard';
+import { authGuard, adminGuard, participantGuard, pendingChangesGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'daily', pathMatch: 'full' },
@@ -7,7 +7,7 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/login/login.component').then(m => m.LoginComponent) },
   { path: 'daily', canActivate: [authGuard, participantGuard],
     loadComponent: () => import('./pages/daily-form/daily-form.component').then(m => m.DailyFormComponent) },
-  { path: 'pre-daily', canActivate: [authGuard],
+  { path: 'pre-daily', canActivate: [authGuard], canDeactivate: [pendingChangesGuard],
     loadComponent: () => import('./pages/pre-daily/pre-daily.component').then(m => m.PreDailyComponent) },
   { path: 'notes', canActivate: [authGuard],
     loadComponent: () => import('./pages/general-notes/general-notes.component').then(m => m.GeneralNotesComponent) },

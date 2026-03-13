@@ -128,6 +128,8 @@ public class DailyService {
                 preDaily.getTasks().add(task);
             }
         }
+        // Always refresh timestamp on explicit save action, even if content is unchanged.
+        preDaily.setUpdatedAt(LocalDateTime.now());
 
         return toPreDailyResponse(preDailyRepository.save(preDaily));
     }
