@@ -316,7 +316,7 @@ public class DailyService {
                 r.setMembersWithBlockers((int) e.getValue().stream().filter(Daily::isHasBlocker).count());
                 r.setTotalProtocols(e.getValue().stream().mapToInt(Daily::totalProtocols).sum());
                 r.setPendingUsers(allActive.stream()
-                    .filter(u -> u.getRole() == User.Role.MEMBER && !submitted.contains(u.getId()))
+                    .filter(u -> (u.getRole() == User.Role.MEMBER || u.getRole() == User.Role.ADMIN) && !submitted.contains(u.getId()))
                     .map(this::toUserResponse).collect(Collectors.toList()));
                 return r;
             }).collect(Collectors.toList());
@@ -326,7 +326,9 @@ public class DailyService {
         List<User>  allActive = userRepository.findByActiveTrue();
         List<Daily> dayDailies = dailyRepository.findByDailyDateOrderByUser_FullName(date);
         Set<Long>   submitted = dayDailies.stream().map(d -> d.getUser().getId()).collect(Collectors.toSet());
-        List<User>  members = allActive.stream().filter(u -> u.getRole() == User.Role.MEMBER).collect(Collectors.toList());
+        List<User>  members = allActive.stream()
+            .filter(u -> u.getRole() == User.Role.MEMBER || u.getRole() == User.Role.ADMIN)
+            .collect(Collectors.toList());
         PendingResponse r = new PendingResponse();
         r.setDate(date); r.setTotal(members.size());
         r.setSubmittedCount((int) members.stream().filter(u -> submitted.contains(u.getId())).count());
