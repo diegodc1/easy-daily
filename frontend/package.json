@@ -1,6 +1,6 @@
 {
   "name": "daily",
-  "version": "1.3.21",
+  "version": "1.3.22",
   "description": "Easy Daily desktop app",
   "author": "diegodc1",
   "main": "electron/main.js",
