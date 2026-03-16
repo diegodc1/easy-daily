@@ -290,8 +290,9 @@ export class DailyFormComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private getPreviousDate(dateStr: string): string {
     const d = new Date(dateStr + 'T12:00:00');
-    d.setDate(d.getDate() - 1);
-    return d.toISOString().slice(0, 10);
+    const isMonday = d.getDay() === 1;
+    d.setDate(d.getDate() - (isMonday ? 3 : 1));
+    return this.getLocalDateKey(d);
   }
 
   private formatDatePtBr(dateStr: string): string {
