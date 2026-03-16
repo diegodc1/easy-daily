@@ -344,7 +344,16 @@ if (!gotTheLock) {
   });
 
   app.on('window-all-closed', () => {
+    // Linux: close app process when the last window is closed.
+    // Windows keeps running in tray because the window close is intercepted above.
+    if (process.platform === 'linux') {
+      app.isQuitting = true;
+      app.quit();
+      return;
+    }
+    // Keep default macOS behavior.
     if (process.platform !== 'darwin') {
+      app.quit();
     }
   });
 }
