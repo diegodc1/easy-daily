@@ -85,6 +85,7 @@ public class MeetingService {
         state.orderMode = randomize ? OrderMode.RANDOM : OrderMode.ORDERED;
         state.speakerOrder = speakerOrder;
         state.spokenUserIds = new HashSet<>();
+        state.participants = participants;
         if (randomize) {
             int firstIdx = ThreadLocalRandom.current().nextInt(speakerOrder.size());
             state.currentSpeakerUserId = speakerOrder.get(firstIdx);
@@ -93,7 +94,6 @@ public class MeetingService {
             state.currentSpeakerUserId = speakerOrder.get(0);
             assignOrderIndexIfMissing(state, state.currentSpeakerUserId);
         }
-        state.participants = participants;
         state.updatedAt = LocalDateTime.now();
         sessionsByDate.put(date, state);
 

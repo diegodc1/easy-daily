@@ -82,7 +82,7 @@
           <div class="card-title">Falando Agora</div>
           <div style="font-size:22px;font-weight:700;line-height:1.2">{{ currentSpeaker.user.fullName }}</div>
         </div>
-        <div class="meeting-order-badge" *ngIf="currentSpeaker.orderIndex">Ordem #{{ currentSpeaker.orderIndex }}</div>
+        <div class="meeting-order-badge" *ngIf="currentSpeaker.orderIndex != null">Ordem #{{ currentSpeaker.orderIndex }}</div>
       </div>
 
       <div class="grid-2" style="gap:12px" *ngIf="currentSpeakerDaily as daily">
@@ -174,7 +174,7 @@
           [class.current]="p.user.id === currentSpeakerUserIdForView"
           [class.done]="p.spoke">
           <div class="meeting-participant-main">
-            <span class="meeting-participant-order" *ngIf="p.orderIndex">#{{ p.orderIndex }}</span>
+            <span class="meeting-participant-order" *ngIf="p.orderIndex != null">#{{ p.orderIndex }}</span>
             <strong>{{ p.user.fullName }}</strong>
           </div>
           <span class="meeting-participant-badge" [class.current]="p.user.id === currentSpeakerUserIdForView" [class.done]="p.spoke">
