@@ -63,18 +63,37 @@ public class DailyService {
         daily.setProtocolDE( req.getProtocolDE()  != null ? req.getProtocolDE()  : 0);
         daily.setProtocolDI( req.getProtocolDI()  != null ? req.getProtocolDI()  : 0);
         daily.setProtocolCO( req.getProtocolCO()  != null ? req.getProtocolCO()  : 0);
+
+        List<TaskRequest> sanitizedTaskRequests = sanitizeTaskRequests(req.getTasks());
+        Map<String, Double> autoPercentByProject = shouldAutoFillProjectPercentages(req.getProjectTimes())
+            ? calculatePercentByTaskCount(sanitizedTaskRequests)
+            : Collections.emptyMap();
+
         daily.getProjectTimes().clear();
         if (req.getProjectTimes() != null) {
             for (ProjectTimeRequest ptr : req.getProjectTimes()) {
                 ProjectTime pt = new ProjectTime();
                 pt.setDaily(daily); pt.setProjectName(ptr.getProjectName());
-                pt.setPercentSpent(ptr.getPercentSpent() != null ? ptr.getPercentSpent() : 0.0);
+                Double manualPercent = ptr.getPercentSpent() != null ? ptr.getPercentSpent() : 0.0;
+                Double resolvedPercent = autoPercentByProject.isEmpty()
+                    ? manualPercent
+                    : autoPercentByProject.getOrDefault(ptr.getProjectName(), 0.0);
+                pt.setPercentSpent(resolvedPercent);
+                daily.getProjectTimes().add(pt);
+            }
+        } else if (!autoPercentByProject.isEmpty()) {
+            for (Map.Entry<String, Double> entry : autoPercentByProject.entrySet()) {
+                ProjectTime pt = new ProjectTime();
+                pt.setDaily(daily);
+                pt.setProjectName(entry.getKey());
+                pt.setPercentSpent(entry.getValue());
                 daily.getProjectTimes().add(pt);
             }
         }
+
         daily.getTasks().clear();
-        if (req.getTasks() != null) {
-            for (TaskRequest tr : req.getTasks()) {
+        if (!sanitizedTaskRequests.isEmpty()) {
+            for (TaskRequest tr : sanitizedTaskRequests) {
                 DailyTask task = new DailyTask();
                 task.setDaily(daily);
                 task.setProjectName(tr.getProjectName());
@@ -628,6 +647,62 @@ public class DailyService {
         int hh = totalMinutes / 60;
         int mm = totalMinutes % 60;
         return String.format("%02d:%02d", hh, mm);
+    }
+
+    private List<TaskRequest> sanitizeTaskRequests(List<TaskRequest> tasks) {
+        if (tasks == null || tasks.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return tasks.stream()
+            .filter(Objects::nonNull)
+            .map(task -> {
+                String projectName = task.getProjectName() != null ? task.getProjectName().trim() : "";
+                String description = task.getDescription() != null ? task.getDescription().trim() : "";
+                if (projectName.isEmpty() || description.isEmpty()) {
+                    return null;
+                }
+                TaskRequest sanitized = new TaskRequest();
+                sanitized.setProjectName(projectName);
+                sanitized.setDescription(description);
+                sanitized.setHoursSpent(task.getHoursSpent());
+                return sanitized;
+            })
+            .filter(Objects::nonNull)
+            .collect(Collectors.toList());
+    }
+
+    private boolean shouldAutoFillProjectPercentages(List<ProjectTimeRequest> projectTimes) {
+        if (projectTimes == null || projectTimes.isEmpty()) {
+            return true;
+        }
+        return projectTimes.stream()
+            .filter(Objects::nonNull)
+            .map(ProjectTimeRequest::getPercentSpent)
+            .filter(Objects::nonNull)
+            .noneMatch(value -> value > 0.0);
+    }
+
+    private Map<String, Double> calculatePercentByTaskCount(List<TaskRequest> tasks) {
+        if (tasks == null || tasks.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        Map<String, Long> taskCountByProject = new LinkedHashMap<>();
+        for (TaskRequest task : tasks) {
+            taskCountByProject.merge(task.getProjectName(), 1L, Long::sum);
+        }
+
+        long totalTasks = taskCountByProject.values().stream().mapToLong(Long::longValue).sum();
+        if (totalTasks <= 0L) {
+            return Collections.emptyMap();
+        }
+
+        Map<String, Double> percentByProject = new LinkedHashMap<>();
+        for (Map.Entry<String, Long> entry : taskCountByProject.entrySet()) {
+            double percent = (entry.getValue() * 100.0) / totalTasks;
+            percentByProject.put(entry.getKey(), Math.round(percent * 100.0) / 100.0);
+        }
+        return percentByProject;
     }
 
     private List<Long> parseVisibleProjectIds(String value) {
