@@ -3,8 +3,11 @@ package com.daily.service;
 import com.daily.dto.DailyDTO.DailyResponse;
 import com.daily.dto.DailyDTO.MeetingParticipantResponse;
 import com.daily.dto.DailyDTO.MeetingSessionResponse;
+import com.daily.dto.DailyDTO.ProjectTimeResponse;
+import com.daily.dto.DailyDTO.TaskResponse;
 import com.daily.dto.DailyDTO.UserResponse;
 import com.daily.entity.Daily;
+import com.daily.entity.DailyTask;
 import com.daily.entity.User;
 import com.daily.repository.DailyRepository;
 import com.daily.repository.UserRepository;
@@ -34,7 +37,6 @@ public class MeetingService {
 
     private final DailyRepository dailyRepository;
     private final UserRepository userRepository;
-    private final DailyService dailyService;
     private final Map<LocalDate, MeetingSessionState> sessionsByDate = new ConcurrentHashMap<>();
 
     public MeetingSessionResponse getState(User user, LocalDate date) {
@@ -132,6 +134,11 @@ public class MeetingService {
         return getState(admin, date);
     }
 
+    public boolean isMeetingFinished(LocalDate date) {
+        MeetingSessionState state = sessionsByDate.get(date);
+        return state != null && state.status == SessionStatus.FINISHED;
+    }
+
     private void advanceTurn(MeetingSessionState state) {
         if (state.currentSpeakerUserId != null) {
             state.spokenUserIds.add(state.currentSpeakerUserId);
@@ -211,13 +218,91 @@ public class MeetingService {
             .sorted(Comparator.comparing(User::getFullName, String.CASE_INSENSITIVE_ORDER))
             .map(u -> {
                 MeetingParticipantSnapshot snapshot = new MeetingParticipantSnapshot();
-                snapshot.user = dailyService.toUserResponse(u);
+                snapshot.user = toUserResponse(u);
                 Daily daily = dailyByUserId.get(u.getId());
-                snapshot.daily = daily != null ? dailyService.toResponse(daily) : null;
+                snapshot.daily = daily != null ? toDailyResponse(daily) : null;
                 snapshot.orderIndex = null;
                 return snapshot;
             })
             .collect(Collectors.toCollection(ArrayList::new));
+    }
+
+    private UserResponse toUserResponse(User user) {
+        UserResponse response = new UserResponse();
+        response.setId(user.getId());
+        response.setUsername(user.getUsername());
+        response.setFullName(user.getFullName());
+        response.setEmail(user.getEmail());
+        response.setBitrixId(user.getBitrixId());
+        response.setRole(user.getRole().name());
+        response.setActive(user.isActive());
+        return response;
+    }
+
+    private DailyResponse toDailyResponse(Daily daily) {
+        DailyResponse response = new DailyResponse();
+        response.setId(daily.getId());
+        response.setDailyDate(daily.getDailyDate());
+
+        String doneYesterday = (daily.getTasks() != null && !daily.getTasks().isEmpty())
+            ? formatTasksAsDoneYesterday(daily.getTasks())
+            : daily.getDoneYesterday();
+
+        response.setDoneYesterday(doneYesterday);
+        response.setDoingToday(daily.getDoingToday());
+        response.setBlockers(daily.getBlockers());
+        response.setHasBlocker(daily.isHasBlocker());
+        response.setProtocolFA(daily.getProtocolFA());
+        response.setProtocolIMP(daily.getProtocolIMP());
+        response.setProtocolDE(daily.getProtocolDE());
+        response.setProtocolDI(daily.getProtocolDI());
+        response.setProtocolCO(daily.getProtocolCO());
+        response.setTotalProtocols(daily.totalProtocols());
+        if (daily.getCreatedAt() != null) {
+            response.setCreatedAt(daily.getCreatedAt().toString());
+        }
+        if (daily.getUpdatedAt() != null) {
+            response.setUpdatedAt(daily.getUpdatedAt().toString());
+        }
+        response.setUser(toUserResponse(daily.getUser()));
+
+        if (daily.getProjectTimes() != null) {
+            response.setProjectTimes(daily.getProjectTimes().stream().map(projectTime -> {
+                ProjectTimeResponse projectTimeResponse = new ProjectTimeResponse();
+                projectTimeResponse.setId(projectTime.getId());
+                projectTimeResponse.setProjectName(projectTime.getProjectName());
+                projectTimeResponse.setPercentSpent(projectTime.getPercentSpent());
+                return projectTimeResponse;
+            }).collect(Collectors.toList()));
+        }
+
+        if (daily.getTasks() != null) {
+            response.setTasks(daily.getTasks().stream().map(task -> {
+                TaskResponse taskResponse = new TaskResponse();
+                taskResponse.setId(task.getId());
+                taskResponse.setProjectName(task.getProjectName());
+                taskResponse.setDescription(task.getDescription());
+                taskResponse.setHoursSpent(task.getHoursSpent());
+                return taskResponse;
+            }).collect(Collectors.toList()));
+        }
+
+        return response;
+    }
+
+    private String formatTasksAsDoneYesterday(List<DailyTask> tasks) {
+        return tasks.stream()
+            .filter(task -> task.getProjectName() != null && task.getDescription() != null)
+            .map(task -> "- [" + task.getProjectName() + "] " + task.getDescription() + " (" + formatHours(task.getHoursSpent()) + ")")
+            .collect(Collectors.joining("\n"));
+    }
+
+    private String formatHours(Double hours) {
+        double safeHours = hours != null ? Math.max(hours, 0.0) : 0.0;
+        int totalMinutes = (int) Math.round(safeHours * 60.0);
+        int hh = totalMinutes / 60;
+        int mm = totalMinutes % 60;
+        return String.format("%02d:%02d", hh, mm);
     }
 
     private MeetingSessionResponse toResponse(

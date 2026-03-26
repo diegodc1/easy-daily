@@ -15,6 +15,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.io.StringWriter;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -22,6 +23,7 @@ import java.util.stream.Collectors;
 public class DailyService {
     private static final String NOTE_TYPE_TEXT = "TEXT";
     private static final String NOTE_TYPE_TODO = "TODO";
+    private static final LocalTime CURRENT_DAILY_LOCK_TIME = LocalTime.NOON;
 
     private final DailyRepository   dailyRepository;
     private final UserRepository    userRepository;
@@ -30,6 +32,7 @@ public class DailyService {
     private final PreDailyRepository preDailyRepository;
     private final GeneralNoteRepository generalNoteRepository;
     private final ObjectMapper objectMapper;
+    private final MeetingService meetingService;
 
     @Transactional
     public DailyResponse saveOrUpdate(User user, DailyRequest req) {
@@ -39,7 +42,7 @@ public class DailyService {
 
         if (!updatingExisting) {
             daily = new Daily();
-        } else if (user.getRole() != User.Role.ADMIN) {
+        } else if (user.getRole() != User.Role.ADMIN && isCurrentDailyLocked(req.getDailyDate())) {
             DailyEditRequest approval = dailyEditRequestRepository
                 .findFirstByDailyAndRequestedByAndStatusAndUsedAtIsNullOrderByReviewedAtDescCreatedAtDesc(
                     daily, user, DailyEditRequest.Status.APPROVED
@@ -598,6 +601,12 @@ public class DailyService {
             return;
         }
 
+        if (!isCurrentDailyLocked(daily.getDailyDate())) {
+            response.setCanEdit(true);
+            response.setEditRequestStatus(null);
+            return;
+        }
+
         Optional<DailyEditRequest> approvedUnused = dailyEditRequestRepository
             .findFirstByDailyAndRequestedByAndStatusAndUsedAtIsNullOrderByReviewedAtDescCreatedAtDesc(
                 daily, user, DailyEditRequest.Status.APPROVED
@@ -626,6 +635,17 @@ public class DailyService {
 
         response.setCanEdit(false);
         response.setEditRequestStatus(null);
+    }
+
+    private boolean isCurrentDailyLocked(LocalDate dailyDate) {
+        LocalDate today = LocalDate.now();
+        if (dailyDate == null || !dailyDate.equals(today)) {
+            return true;
+        }
+        if (meetingService.isMeetingFinished(today)) {
+            return true;
+        }
+        return !LocalTime.now().isBefore(CURRENT_DAILY_LOCK_TIME);
     }
 
     private void ensureDailyUser(User user) {
