@@ -40,7 +40,7 @@ public class MeetingService {
     private final Map<LocalDate, MeetingSessionState> sessionsByDate = new ConcurrentHashMap<>();
 
     public MeetingSessionResponse getState(User user, LocalDate date) {
-        ensureCanParticipate(user);
+        ensureCanAccessMeeting(user);
         MeetingSessionState state = sessionsByDate.get(date);
         if (state == null) {
             List<MeetingParticipantSnapshot> snapshots = buildSnapshots(date);
@@ -54,7 +54,7 @@ public class MeetingService {
     }
 
     public MeetingSessionResponse start(User admin, LocalDate date, boolean randomize) {
-        requireAdmin(admin);
+        requireMeetingController(admin);
         List<MeetingParticipantSnapshot> participants = buildSnapshots(date);
         if (participants.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Nao ha membros ativos para iniciar a reuniao.");
@@ -105,7 +105,7 @@ public class MeetingService {
     }
 
     public MeetingSessionResponse next(User admin, LocalDate date, Boolean randomizeOverride) {
-        requireAdmin(admin);
+        requireMeetingController(admin);
         MeetingSessionState state = requireRunningSession(date);
         if (randomizeOverride != null) {
             state.orderMode = randomizeOverride ? OrderMode.RANDOM : OrderMode.ORDERED;
@@ -115,13 +115,13 @@ public class MeetingService {
     }
 
     public MeetingSessionResponse finishTurn(User user, LocalDate date) {
-        ensureCanParticipate(user);
+        ensureCanAccessMeeting(user);
         MeetingSessionState state = requireRunningSession(date);
         Long currentId = state.currentSpeakerUserId;
-        boolean isAdmin = user != null && user.getRole() == User.Role.ADMIN;
+        boolean isController = isMeetingController(user);
         boolean isCurrentSpeaker = user != null && currentId != null && Objects.equals(user.getId(), currentId);
-        if (!isAdmin && !isCurrentSpeaker) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Somente o usuario da vez ou admin pode encerrar esta vez.");
+        if (!isController && !isCurrentSpeaker) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Somente o usuario da vez, admin ou sistema pode encerrar esta vez.");
         }
 
         advanceTurn(state);
@@ -129,7 +129,7 @@ public class MeetingService {
     }
 
     public MeetingSessionResponse reset(User admin, LocalDate date) {
-        requireAdmin(admin);
+        requireMeetingController(admin);
         sessionsByDate.remove(date);
         return getState(admin, date);
     }
@@ -196,15 +196,19 @@ public class MeetingService {
         return state;
     }
 
-    private void requireAdmin(User user) {
-        if (user == null || user.getRole() != User.Role.ADMIN) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Apenas admin pode controlar a reuniao.");
+    private boolean isMeetingController(User user) {
+        return user != null && (user.getRole() == User.Role.ADMIN || user.getRole() == User.Role.SISTEMA);
+    }
+
+    private void requireMeetingController(User user) {
+        if (!isMeetingController(user)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Apenas admin ou sistema pode controlar a reuniao.");
         }
     }
 
-    private void ensureCanParticipate(User user) {
-        if (user == null || user.getRole() == User.Role.SISTEMA) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Usuario SISTEMA nao participa da reuniao.");
+    private void ensureCanAccessMeeting(User user) {
+        if (user == null) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Usuario nao autenticado.");
         }
     }
 
@@ -326,7 +330,7 @@ public class MeetingService {
             .filter(Objects::nonNull)
             .filter(spokenUserIds::contains)
             .count());
-        boolean canControl = user != null && user.getRole() == User.Role.ADMIN;
+        boolean canControl = isMeetingController(user);
         boolean canFinish = status == SessionStatus.IN_PROGRESS &&
             user != null &&
             (canControl || Objects.equals(user.getId(), currentSpeakerUserId));

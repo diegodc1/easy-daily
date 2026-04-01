@@ -27,9 +27,7 @@
     <a class="nav-link" routerLink="/pre-daily" routerLinkActive="active" (click)="closeMobileMenu()"><span class="nav-icon material-symbols-outlined">checklist</span> Pre-Daily</a>
     <a class="nav-link" routerLink="/notes" routerLinkActive="active" (click)="closeMobileMenu()"><span class="nav-icon material-symbols-outlined">sticky_note_2</span> Anotacoes</a>
     <a class="nav-link" routerLink="/history" routerLinkActive="active" (click)="closeMobileMenu()"><span class="nav-icon material-symbols-outlined">history</span> Historico</a>
-    <ng-container *ngIf="auth.getUser()?.role !== 'SISTEMA'">
-      <a class="nav-link" routerLink="/meeting" routerLinkActive="active" (click)="closeMobileMenu()"><span class="nav-icon material-symbols-outlined">present_to_all</span> Modo Reuniao</a>
-    </ng-container>
+    <a class="nav-link" routerLink="/meeting" routerLinkActive="active" (click)="closeMobileMenu()"><span class="nav-icon material-symbols-outlined">present_to_all</span> Modo Reuniao</a>
     <a class="nav-link" routerLink="/projects" routerLinkActive="active" (click)="closeMobileMenu()"><span class="nav-icon material-symbols-outlined">folder</span> Projetos</a>
 
     <ng-container *ngIf="auth.isAdmin()">

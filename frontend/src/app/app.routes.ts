@@ -13,7 +13,7 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/general-notes/general-notes.component').then(m => m.GeneralNotesComponent) },
   { path: 'history', canActivate: [authGuard],
     loadComponent: () => import('./pages/history/history.component').then(m => m.HistoryComponent) },
-  { path: 'meeting', canActivate: [authGuard, participantGuard],
+  { path: 'meeting', canActivate: [authGuard],
     loadComponent: () => import('./pages/meeting-room/meeting-room.component').then(m => m.MeetingRoomComponent) },
   { path: 'dashboard', canActivate: [authGuard, adminGuard],
     loadComponent: () => import('./pages/admin-dashboard/admin-dashboard.component').then(m => m.AdminDashboardComponent) },
