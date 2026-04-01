@@ -182,8 +182,8 @@ function initAutoUpdater() {
     updateDownloaded = true;
     isDownloadingUpdate = false;
     const notification = new Notification({
-      title: 'Atualizacao pronta',
-      body: 'A nova versao foi baixada e sera instalada ao fechar o aplicativo.',
+      title: 'Nova Versão!',
+      body: 'Uma nova versão foi detectada e será instalada automaticamente!',
     });
     notification.show();
 
