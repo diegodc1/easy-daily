@@ -47,13 +47,14 @@
         <div class="user-name">{{ auth.getUser()?.fullName }}</div>
         <div class="user-role">{{ auth.getUser()?.role }}</div>
         <button class="btn-logout" (click)="logout()">Sair</button>
-        <div class="app-version-wrap" *ngIf="appVersion">
+        <div class="app-version-wrap" *ngIf="appVersion" [class.has-update]="updateAvailable || updateInProgress">
           <div class="app-version">Versao {{ appVersion }}</div>
           <button
             class="btn-update"
             *ngIf="updateAvailable || updateInProgress"
             (click)="triggerManualUpdate()"
             [disabled]="updateActionInProgress"
+            [class.btn-update-highlight]="updateAvailable && !updateInProgress && !updateActionInProgress"
             type="button"
           >
             {{ updateActionInProgress ? 'Atualizando...' : 'Atualizar' }}

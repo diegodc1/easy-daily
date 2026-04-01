@@ -13,6 +13,7 @@ let isCheckingForUpdate = false;
 let isDownloadingUpdate = false;
 let updateAvailable = false;
 let updateDownloaded = false;
+let latestVersion = null;
 let shouldInstallAfterMinimize = false;
 let shouldInstallAfterManualTrigger = false;
 
@@ -156,8 +157,8 @@ function startDailyReminderTimer() {
 function initAutoUpdater() {
   if (!app.isPackaged) return;
 
-  autoUpdater.autoDownload = true;
-  autoUpdater.autoInstallOnAppQuit = true;
+  autoUpdater.autoDownload = false;
+  autoUpdater.autoInstallOnAppQuit = false;
 
   autoUpdater.on('error', (error) => {
     isDownloadingUpdate = false;
@@ -166,11 +167,14 @@ function initAutoUpdater() {
 
   autoUpdater.on('update-available', () => {
     updateAvailable = true;
+    latestVersion = null;
   });
 
   autoUpdater.on('update-not-available', () => {
     updateAvailable = false;
     isDownloadingUpdate = false;
+    updateDownloaded = false;
+    latestVersion = null;
   });
 
   autoUpdater.on('update-downloaded', () => {
@@ -197,7 +201,7 @@ function initAutoUpdater() {
   if (!updaterIntervalId) {
     updaterIntervalId = setInterval(() => {
       checkForUpdatesSafe('periodic');
-    }, 6 * 60 * 60 * 1000);
+    }, 60 * 60 * 1000);
   }
 }
 
@@ -214,7 +218,7 @@ async function checkForUpdatesSafe(source) {
 
   try {
     const result = await autoUpdater.checkForUpdates();
-    const latestVersion = result?.updateInfo?.version;
+    latestVersion = result?.updateInfo?.version || null;
     if (latestVersion && latestVersion !== app.getVersion()) {
       updateAvailable = true;
     }
@@ -285,15 +289,13 @@ ipcMain.handle('app:checkUpdateAvailability', async () => {
     };
   }
 
-  await checkForUpdatesSafe('renderer-availability');
-
   return {
     supported: true,
     updateAvailable: updateAvailable || updateDownloaded,
     updateDownloaded,
     updateInProgress: isDownloadingUpdate,
     currentVersion: app.getVersion(),
-    latestVersion: null,
+    latestVersion,
   };
 });
 

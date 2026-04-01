@@ -68,10 +68,26 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
 .btn-logout:hover { border-color: var(--danger); color: var(--danger); }
 .app-version   { margin-top: 8px; font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); }
 .app-version-wrap { margin-top: 8px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.app-version-wrap.has-update {
+  border: 1px solid color-mix(in srgb, var(--warning) 45%, var(--border));
+  border-radius: 10px;
+  padding: 6px 8px;
+  background: color-mix(in srgb, var(--warning) 14%, transparent);
+}
 .app-version-wrap .app-version { margin-top: 0; }
 .btn-update { padding: 4px 10px; border-radius: 8px; border: 1px solid var(--accent); background: transparent; color: var(--accent); font-size: 11px; cursor: pointer; transition: all .2s; }
 .btn-update:hover { background: rgba(0, 163, 113, .1); }
 .btn-update:disabled { opacity: .6; cursor: not-allowed; }
+.btn-update-highlight {
+  border-color: var(--warning);
+  color: #2a1b00;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--warning) 80%, white 20%), color-mix(in srgb, var(--warning) 65%, white 35%));
+  font-weight: 700;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--warning) 30%, transparent);
+}
+.btn-update-highlight:hover {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--warning) 85%, white 15%), color-mix(in srgb, var(--warning) 70%, white 30%));
+}
 .app-update-status { margin-top: 6px; font-size: 11px; color: var(--text-muted); }
 
 /* ===== CARDS ===== */
