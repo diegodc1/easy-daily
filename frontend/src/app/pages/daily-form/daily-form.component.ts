@@ -99,11 +99,11 @@ export class DailyFormComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   get visibleTaskProjects(): string[] {
-    return this.taskProjects.filter(projectName => this.isVisibleProjectName(projectName));
+    return this.taskProjects;
   }
 
   get visibleTodayProjects(): string[] {
-    return this.todayProjects.filter(projectName => this.isVisibleProjectName(projectName));
+    return this.todayProjects;
   }
 
   get visibleProjectTimes(): ProjectTime[] {
@@ -201,7 +201,7 @@ export class DailyFormComponent implements OnInit, AfterViewInit, OnDestroy {
         blockers: prev.blockers ?? '',
         hasBlocker: !!prev.hasBlocker,
         projectTimes: this.projects.map(p => prev.projectTimes?.find(x => x.projectName === p.name) ?? { projectName: p.name, percentSpent: 0 }),
-        tasks: (prev.tasks ?? []).map(t => ({ ...t })),
+        tasks: (prev.tasks ?? []).map(t => ({ ...t, projectName: this.resolveProjectName(t.projectName) })),
       };
       this.syncTaskProjectsFromTasks();
       this.todayTasks = this.parseDoingToday(prev.doingToday);
@@ -306,13 +306,27 @@ export class DailyFormComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private syncTaskProjectsFromTasks() {
-    const unique = new Set((this.form.tasks ?? []).map(t => t.projectName).filter(Boolean));
-    this.taskProjects = Array.from(unique);
+    const ordered: string[] = [];
+    for (const task of (this.form.tasks ?? [])) {
+      const resolved = this.resolveProjectName(task.projectName);
+      if (!resolved) continue;
+      if (!ordered.some(name => this.sameProjectName(name, resolved))) {
+        ordered.push(resolved);
+      }
+    }
+    this.taskProjects = ordered;
   }
 
   private syncTodayProjectsFromTasks() {
-    const unique = new Set((this.todayTasks ?? []).map(t => t.projectName).filter(Boolean));
-    this.todayProjects = Array.from(unique);
+    const ordered: string[] = [];
+    for (const task of (this.todayTasks ?? [])) {
+      const resolved = this.resolveProjectName(task.projectName);
+      if (!resolved) continue;
+      if (!ordered.some(name => this.sameProjectName(name, resolved))) {
+        ordered.push(resolved);
+      }
+    }
+    this.todayProjects = ordered;
   }
 
   private findExistingProject(projects: string[], targetProjectName: string): string | null {
@@ -323,6 +337,17 @@ export class DailyFormComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private normalizeProjectName(projectName: string): string {
     return (projectName ?? '').trim().toLowerCase();
+  }
+
+  private sameProjectName(a: string, b: string): boolean {
+    return this.normalizeProjectName(a) === this.normalizeProjectName(b);
+  }
+
+  private resolveProjectName(projectName: string): string {
+    const normalized = this.normalizeProjectName(projectName);
+    if (!normalized) return '';
+    const existing = this.projects.find(p => this.normalizeProjectName(p.name) === normalized);
+    return existing?.name ?? (projectName ?? '').trim();
   }
 
   private showDuplicatePopover(target: HTMLElement | undefined, message: string) {
@@ -386,8 +411,8 @@ export class DailyFormComponent implements OnInit, AfterViewInit, OnDestroy {
   confirmRemoveProjectBlock() {
     if (!this.projectToRemove) return;
     const projectName = this.projectToRemove;
-    this.taskProjects = this.taskProjects.filter(p => p !== projectName);
-    this.form.tasks = (this.form.tasks ?? []).filter(t => t.projectName !== projectName);
+    this.taskProjects = this.taskProjects.filter(p => !this.sameProjectName(p, projectName));
+    this.form.tasks = (this.form.tasks ?? []).filter(t => !this.sameProjectName(t.projectName, projectName));
     this.setProjectPercent(projectName, 0);
     this.projectToRemove = null;
     this.showRemoveProjectModal = false;
@@ -399,17 +424,18 @@ export class DailyFormComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   getTasksByProject(projectName: string): DailyTask[] {
-    return (this.form.tasks ?? []).filter(t => t.projectName === projectName);
+    return (this.form.tasks ?? []).filter(t => this.sameProjectName(t.projectName, projectName));
   }
 
   addTask(projectName: string) {
     if (!projectName) return;
     if (!this.form.tasks) this.form.tasks = [];
-    if (!this.taskProjects.includes(projectName)) {
-      this.taskProjects.push(projectName);
+    const resolvedProjectName = this.resolveProjectName(projectName);
+    if (!this.taskProjects.some(p => this.sameProjectName(p, resolvedProjectName))) {
+      this.taskProjects.push(resolvedProjectName);
     }
     this.form.tasks.push({
-      projectName,
+      projectName: resolvedProjectName,
       description: '',
       hoursSpent: 0,
       hoursInput: '',
@@ -442,8 +468,8 @@ export class DailyFormComponent implements OnInit, AfterViewInit, OnDestroy {
   confirmRemoveTodayProjectBlock() {
     if (!this.projectToRemove) return;
     const projectName = this.projectToRemove;
-    this.todayProjects = this.todayProjects.filter(p => p !== projectName);
-    this.todayTasks = (this.todayTasks ?? []).filter(t => t.projectName !== projectName);
+    this.todayProjects = this.todayProjects.filter(p => !this.sameProjectName(p, projectName));
+    this.todayTasks = (this.todayTasks ?? []).filter(t => !this.sameProjectName(t.projectName, projectName));
     this.projectToRemove = null;
     this.showRemoveTodayProjectModal = false;
   }
@@ -454,16 +480,17 @@ export class DailyFormComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   getTodayTasksByProject(projectName: string): { projectName: string; description: string }[] {
-    return (this.todayTasks ?? []).filter(t => t.projectName === projectName);
+    return (this.todayTasks ?? []).filter(t => this.sameProjectName(t.projectName, projectName));
   }
 
   addTodayTask(projectName: string) {
     if (!projectName) return;
     if (!this.todayTasks) this.todayTasks = [];
-    if (!this.todayProjects.includes(projectName)) {
-      this.todayProjects.push(projectName);
+    const resolvedProjectName = this.resolveProjectName(projectName);
+    if (!this.todayProjects.some(p => this.sameProjectName(p, resolvedProjectName))) {
+      this.todayProjects.push(resolvedProjectName);
     }
-    this.todayTasks.push({ projectName, description: '' });
+    this.todayTasks.push({ projectName: resolvedProjectName, description: '' });
   }
 
   removeTodayTask(task: { projectName: string; description: string }) {
@@ -482,7 +509,7 @@ export class DailyFormComponent implements OnInit, AfterViewInit, OnDestroy {
       .map(line => {
         const match = line.match(/^- \[(.+?)\]\s+(.+)$/);
         if (!match) return null;
-        return { projectName: match[1].trim(), description: match[2].trim() };
+        return { projectName: this.resolveProjectName(match[1].trim()), description: match[2].trim() };
       })
       .filter((x): x is { projectName: string; description: string } => !!x && !!x.projectName && !!x.description);
 
@@ -577,9 +604,10 @@ export class DailyFormComponent implements OnInit, AfterViewInit, OnDestroy {
 
     const sanitizedTasks: DailyTask[] = [];
     for (const t of (this.form.tasks ?? [])) {
-      if (!t.projectName || (t.description ?? '').trim().length === 0) continue;
+      const projectName = this.resolveProjectName(t.projectName);
+      if (!projectName || (t.description ?? '').trim().length === 0) continue;
       sanitizedTasks.push({
-        projectName: t.projectName,
+        projectName,
         description: t.description.trim(),
         hoursSpent: 0,
       });
@@ -590,8 +618,8 @@ export class DailyFormComponent implements OnInit, AfterViewInit, OnDestroy {
       .join('\n');
 
     const sanitizedTodayTasks = (this.todayTasks ?? [])
-      .filter(t => !!t.projectName && (t.description ?? '').trim().length > 0)
-      .map(t => ({ projectName: t.projectName, description: t.description.trim() }));
+      .map(t => ({ projectName: this.resolveProjectName(t.projectName), description: (t.description ?? '').trim() }))
+      .filter(t => !!t.projectName && t.description.length > 0);
     const doingTodayFromTasks = this.buildDoingTodayFromTasks(sanitizedTodayTasks);
 
     this.loading = true;
@@ -631,7 +659,7 @@ export class DailyFormComponent implements OnInit, AfterViewInit, OnDestroy {
     this.form = {
       ...d,
       projectTimes: this.projects.map(p => d.projectTimes?.find(x => x.projectName === p.name) ?? { projectName: p.name, percentSpent: 0 }),
-      tasks: d.tasks ?? [],
+      tasks: (d.tasks ?? []).map(task => ({ ...task, projectName: this.resolveProjectName(task.projectName) })),
     };
     this.syncTaskProjectsFromTasks();
     this.todayTasks = this.parseDoingToday(d.doingToday);
