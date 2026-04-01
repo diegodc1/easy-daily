@@ -1,5 +1,5 @@
 <div class="fade-in daily-page" [class.daily-page-locked]="isEditLocked">
-  <div class="page-header">
+  <div class="page-header" style="margin-bottom: 0.2rem">
     <div>
       <div class="page-title">Minha Daily</div>
       <div class="page-subtitle">{{ todayStr }}</div>
@@ -26,9 +26,19 @@
     </div>
   </div>
 
-  <div class="alert alert-error" *ngIf="saveError">{{ saveError }}</div>
-  <div class="alert alert-success" *ngIf="protocolSyncMessage && !protocolSyncMessage.startsWith('Nao foi')">{{ protocolSyncMessage }}</div>
-  <div class="alert alert-error" *ngIf="protocolSyncMessage && protocolSyncMessage.startsWith('Nao foi')">{{ protocolSyncMessage }}</div>
+  <div class="div-top-daily">
+     <div style="width: 90%">
+         <div class="alert alert-error" *ngIf="saveError">{{ saveError }}</div>
+         <div class="alert alert-success" *ngIf="protocolSyncMessage && !protocolSyncMessage.startsWith('Nao foi')">{{ protocolSyncMessage }}</div>
+         <div class="alert alert-error" *ngIf="protocolSyncMessage && protocolSyncMessage.startsWith('Nao foi')">{{ protocolSyncMessage }}</div>
+     </div>
+      <div class="daily-save-row" style="width: 100%">
+          <button class="btn btn-primary daily-save-btn" style="padding:12px 40px; color: white; font-size:15px;display: flex;justify-content: center;" (click)="save()" [disabled]="loading || isEditLocked">
+              <span class="spinner" *ngIf="loading"></span>
+              {{ loading ? 'Salvando...' : 'Salvar Daily' }}
+          </button>
+      </div>
+  </div>
 
   <div class="card daily-lock-card" *ngIf="isEditLocked">
     <div class="daily-lock-header">
@@ -324,12 +334,6 @@
     </div>
   </div>
 
-  <div class="daily-save-row" style="margin-top:24px;display:flex;justify-content:flex-end">
-    <button class="btn btn-primary daily-save-btn" style="padding:12px 40px; color: white; font-size:15px;display: flex;justify-content: center;" (click)="save()" [disabled]="loading || isEditLocked">
-      <span class="spinner" *ngIf="loading"></span>
-      {{ loading ? 'Salvando...' : 'Salvar Daily' }}
-    </button>
-  </div>
 
   <div class="app-toast app-toast-success" *ngIf="saveSuccess">
     {{ successMessage || 'Operacao concluida.' }}
