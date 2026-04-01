@@ -24,6 +24,8 @@ import tippy, { type Instance } from 'tippy.js';
 export class DailyFormComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('replicateBtn') replicateBtn?: ElementRef<HTMLElement>;
   @ViewChild('pullPreBtn') pullPreBtn?: ElementRef<HTMLElement>;
+  @ViewChild('addTaskProjectBtn') addTaskProjectBtn?: ElementRef<HTMLElement>;
+  @ViewChild('addTodayProjectBtn') addTodayProjectBtn?: ElementRef<HTMLElement>;
 
   selectedDate = this.getLocalDateKey();
   todayStr = new Date().toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
@@ -313,6 +315,33 @@ export class DailyFormComponent implements OnInit, AfterViewInit, OnDestroy {
     this.todayProjects = Array.from(unique);
   }
 
+  private findExistingProject(projects: string[], targetProjectName: string): string | null {
+    const normalizedTarget = this.normalizeProjectName(targetProjectName);
+    if (!normalizedTarget) return null;
+    return projects.find(projectName => this.normalizeProjectName(projectName) === normalizedTarget) ?? null;
+  }
+
+  private normalizeProjectName(projectName: string): string {
+    return (projectName ?? '').trim().toLowerCase();
+  }
+
+  private showDuplicatePopover(target: HTMLElement | undefined, message: string) {
+    if (!target) return;
+    const instance = tippy(target, {
+      content: message,
+      trigger: 'manual',
+      placement: 'top',
+      maxWidth: 320,
+      hideOnClick: false,
+    });
+    this.tooltipInstances.push(instance);
+    instance.show();
+    setTimeout(() => {
+      instance.destroy();
+      this.tooltipInstances = this.tooltipInstances.filter(t => t !== instance);
+    }, 1600);
+  }
+
   private applyVisibleProjects(projectIds: number[]) {
     const activeIds = this.projects.map(p => p.id);
     const filtered = (projectIds ?? [])
@@ -338,9 +367,12 @@ export class DailyFormComponent implements OnInit, AfterViewInit, OnDestroy {
 
   addProjectBlock() {
     if (!this.selectedTaskProject) return;
-    if (!this.taskProjects.includes(this.selectedTaskProject)) {
-      this.taskProjects.push(this.selectedTaskProject);
+    const existingProject = this.findExistingProject(this.taskProjects, this.selectedTaskProject);
+    if (existingProject) {
+      this.showDuplicatePopover(this.addTaskProjectBtn?.nativeElement, `Projeto "${existingProject}" ja adicionado.`);
+      return;
     }
+    this.taskProjects.push(this.selectedTaskProject);
     if (this.getTasksByProject(this.selectedTaskProject).length === 0) {
       this.addTask(this.selectedTaskProject);
     }
@@ -391,9 +423,12 @@ export class DailyFormComponent implements OnInit, AfterViewInit, OnDestroy {
 
   addTodayProjectBlock() {
     if (!this.selectedTodayProject) return;
-    if (!this.todayProjects.includes(this.selectedTodayProject)) {
-      this.todayProjects.push(this.selectedTodayProject);
+    const existingProject = this.findExistingProject(this.todayProjects, this.selectedTodayProject);
+    if (existingProject) {
+      this.showDuplicatePopover(this.addTodayProjectBtn?.nativeElement, `Projeto "${existingProject}" ja adicionado.`);
+      return;
     }
+    this.todayProjects.push(this.selectedTodayProject);
     if (this.getTodayTasksByProject(this.selectedTodayProject).length === 0) {
       this.addTodayTask(this.selectedTodayProject);
     }

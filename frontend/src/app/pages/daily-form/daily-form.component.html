@@ -90,7 +90,7 @@
                 <option value="" disabled>Selecione um projeto</option>
                 <option *ngFor="let p of visibleProjects" [value]="p.name">{{ p.name }}</option>
               </select>
-              <button class="btn btn-secondary btn-sm daily-project-add-btn" style="height: 2.5rem" type="button" (click)="addProjectBlock()" [disabled]="!selectedTaskProject"><span class="material-symbols-outlined">add_circle</span></button>
+              <button class="btn btn-secondary btn-sm daily-project-add-btn" style="height: 2.5rem" type="button" #addTaskProjectBtn (click)="addProjectBlock()" [disabled]="!selectedTaskProject"><span class="material-symbols-outlined">add_circle</span></button>
             </div>
         </div>
 
@@ -151,7 +151,7 @@
                 <option value="" disabled>Selecione um projeto</option>
                 <option *ngFor="let p of visibleProjects" [value]="p.name">{{ p.name }}</option>
               </select>
-              <button class="btn btn-secondary btn-sm daily-project-add-btn" style="height:2.5rem" type="button" (click)="addTodayProjectBlock()" [disabled]="!selectedTodayProject">
+              <button class="btn btn-secondary btn-sm daily-project-add-btn" style="height:2.5rem" type="button" #addTodayProjectBtn (click)="addTodayProjectBlock()" [disabled]="!selectedTodayProject">
                 <span class="material-symbols-outlined">add_circle</span>
               </button>
             </div>
