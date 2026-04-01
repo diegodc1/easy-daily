@@ -369,7 +369,7 @@ export class DailyFormComponent implements OnInit, AfterViewInit, OnDestroy {
     if (!this.selectedTaskProject) return;
     const existingProject = this.findExistingProject(this.taskProjects, this.selectedTaskProject);
     if (existingProject) {
-      this.showDuplicatePopover(this.addTaskProjectBtn?.nativeElement, `Projeto "${existingProject}" ja adicionado.`);
+      this.showDuplicatePopover(this.addTaskProjectBtn?.nativeElement, `Projeto "${existingProject}" já foi adicionado.`);
       return;
     }
     this.taskProjects.push(this.selectedTaskProject);
@@ -425,7 +425,7 @@ export class DailyFormComponent implements OnInit, AfterViewInit, OnDestroy {
     if (!this.selectedTodayProject) return;
     const existingProject = this.findExistingProject(this.todayProjects, this.selectedTodayProject);
     if (existingProject) {
-      this.showDuplicatePopover(this.addTodayProjectBtn?.nativeElement, `Projeto "${existingProject}" ja adicionado.`);
+      this.showDuplicatePopover(this.addTodayProjectBtn?.nativeElement, `Projeto "${existingProject}" já foi adicionado.`);
       return;
     }
     this.todayProjects.push(this.selectedTodayProject);
@@ -605,8 +605,8 @@ export class DailyFormComponent implements OnInit, AfterViewInit, OnDestroy {
       doingToday: doingTodayFromTasks,
       tasks: sanitizedTasks,
     }).pipe(
-      catchError(() => {
-        this.saveError = 'Erro ao salvar.';
+      catchError((err) => {
+        this.saveError = err?.error?.message ?? 'Erro ao salvar.';
         this.loading = false;
         return of(null);
       })

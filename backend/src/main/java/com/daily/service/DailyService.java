@@ -7,15 +7,19 @@ import com.daily.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.io.StringWriter;
+import java.time.DateTimeException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -23,6 +27,7 @@ import java.util.stream.Collectors;
 public class DailyService {
     private static final String NOTE_TYPE_TEXT = "TEXT";
     private static final String NOTE_TYPE_TODO = "TODO";
+    private static final ZoneId DEFAULT_DAILY_LOCK_ZONE = ZoneId.of("America/Sao_Paulo");
     private static final LocalTime CURRENT_DAILY_LOCK_TIME = LocalTime.NOON;
 
     private final DailyRepository   dailyRepository;
@@ -33,6 +38,8 @@ public class DailyService {
     private final GeneralNoteRepository generalNoteRepository;
     private final ObjectMapper objectMapper;
     private final MeetingService meetingService;
+    @Value("${app.daily.lock-zone:America/Sao_Paulo}")
+    private String dailyLockZone;
 
     @Transactional
     public DailyResponse saveOrUpdate(User user, DailyRequest req) {
@@ -638,14 +645,26 @@ public class DailyService {
     }
 
     private boolean isCurrentDailyLocked(LocalDate dailyDate) {
-        LocalDate today = LocalDate.now();
+        ZonedDateTime now = ZonedDateTime.now(resolveDailyLockZone());
+        LocalDate today = now.toLocalDate();
         if (dailyDate == null || !dailyDate.equals(today)) {
             return true;
         }
         if (meetingService.isMeetingFinished(today)) {
             return true;
         }
-        return !LocalTime.now().isBefore(CURRENT_DAILY_LOCK_TIME);
+        return !now.toLocalTime().isBefore(CURRENT_DAILY_LOCK_TIME);
+    }
+
+    private ZoneId resolveDailyLockZone() {
+        if (dailyLockZone == null || dailyLockZone.trim().isEmpty()) {
+            return DEFAULT_DAILY_LOCK_ZONE;
+        }
+        try {
+            return ZoneId.of(dailyLockZone.trim());
+        } catch (DateTimeException ex) {
+            return DEFAULT_DAILY_LOCK_ZONE;
+        }
     }
 
     private void ensureDailyUser(User user) {
